@@ -5,12 +5,12 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, si
 // Your Firebase configuration
 // TODO: Replace this with your actual Firebase config from Firebase Console
 const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyDB6UH9wG6f8ArJTDAZ7OU7DzfJuzISgVw",
+    authDomain: "ibis-fe4a8.firebaseapp.com",
+    projectId: "ibis-fe4a8",
+    storageBucket: "ibis-fe4a8.firebasestorage.app",
+    messagingSenderId: "813764414108",
+    appId: "1:813764414108:web:1e54dcbfa2a835c0debb59"
 };
 
 // Initialize Firebase
