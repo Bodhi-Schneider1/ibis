@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login/Signup Container -->
+    <div id="auth-container" class="container">
+        <h1>Welcome!</h1>
+        
+        <!-- Login Form -->
+        <div id="login-form" class="form-section">
+            <h2>Login</h2>
+            <input type="email" id="login-email" placeholder="Email" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <p>Don't have an account? <a href="#" onclick="toggleForms()">Sign up</a></p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="form-section hidden">
+            <h2>Sign Up</h2>
+            <input type="email" id="signup-email" placeholder="Email" required>
+            <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required>
+            <button onclick="signup()">Sign Up</button>
+            <p>Already have an account? <a href="#" onclick="toggleForms()">Login</a></p>
+        </div>
+
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <!-- Dashboard (shown after login) -->
+    <div id="dashboard" class="container hidden">
+        <h1>Welcome to Your Dashboard!</h1>
+        <p>Email: <span id="user-email"></span></p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
