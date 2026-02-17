@@ -1,0 +1,19 @@
+# Node modules (if you add any npm packages later)
+node_modules/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Optional: Uncomment if you want to keep Firebase config private
+# app.js
