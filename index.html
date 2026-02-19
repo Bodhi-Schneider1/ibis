@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ibis Academy - Master Math Your Way</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Login/Signup Container -->
+    <div id="auth-container" class="container">
+        <div class="logo-container">
+            <div class="logo">🦩</div>
+            <h1>Ibis Academy</h1>
+        </div>
+        <p class="tagline">Master algebra, geometry, and trigonometry</p>
+        
+        <!-- Login Form -->
+        <div id="login-form" class="form-section">
+            <h2>Login</h2>
+            <input type="email" id="login-email" placeholder="Email" required>
+            <input type="password" id="login-password" placeholder="Password" required>
+            <button onclick="login()">Login</button>
+            <p>Don't have an account? <a href="#" onclick="toggleForms()">Sign up</a></p>
+        </div>
+
+        <!-- Signup Form -->
+        <div id="signup-form" class="form-section hidden">
+            <h2>Sign Up</h2>
+            <input type="email" id="signup-email" placeholder="Email" required>
+            <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required>
+            <button onclick="signup()">Sign Up</button>
+            <p>Already have an account? <a href="#" onclick="toggleForms()">Login</a></p>
+        </div>
+
+        <p id="error-message" class="error"></p>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard-container hidden">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="logo-header">
+                    <span class="logo-emoji">🦩</span>
+                    <h1>Ibis Academy</h1>
+                </div>
+                <div class="user-menu">
+                    <span class="welcome-text">Welcome, <span id="user-name">Student</span>!</span>
+                    <button onclick="showProfile()" class="icon-button" title="Profile">👤</button>
+                    <button onclick="logout()" class="icon-button" title="Logout">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-view">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="toggle-btn active" onclick="showLearnView()" id="learn-toggle">
+                    📚 Learn
+                </button>
+                <button class="toggle-btn" onclick="showPracticeView()" id="practice-toggle">
+                    ✏️ Practice
+                </button>
+            </div>
+
+            <!-- Learn View -->
+            <div id="learn-view">
+                <div class="welcome-section">
+                    <h2>Learn New Concepts</h2>
+                    <p>Choose a topic to explore lessons and tutorials</p>
+                </div>
+
+                <!-- Lessons by Topic -->
+                <div class="lessons-container">
+                    <!-- Algebra Lessons -->
+                    <div class="topic-lessons">
+                        <div class="topic-header">
+                            <span class="topic-icon-large">📐</span>
+                            <h3>Algebra</h3>
+                        </div>
+                        <div class="lesson-cards">
+                            <div class="lesson-card" onclick="openLesson('algebra', 'linear-equations')">
+                                <h4>Linear Equations</h4>
+                                <p>Solve equations of the form ax + b = c</p>
+                                <span class="lesson-badge">Beginner</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('algebra', 'quadratic-equations')">
+                                <h4>Quadratic Equations</h4>
+                                <p>Understand and solve x² + bx + c = 0</p>
+                                <span class="lesson-badge">Intermediate</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('algebra', 'functions')">
+                                <h4>Functions & Graphs</h4>
+                                <p>Learn about function notation and graphing</p>
+                                <span class="lesson-badge">Intermediate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Geometry Lessons -->
+                    <div class="topic-lessons">
+                        <div class="topic-header">
+                            <span class="topic-icon-large">📏</span>
+                            <h3>Geometry</h3>
+                        </div>
+                        <div class="lesson-cards">
+                            <div class="lesson-card" onclick="openLesson('geometry', 'triangles')">
+                                <h4>Triangles</h4>
+                                <p>Properties, types, and theorems</p>
+                                <span class="lesson-badge">Beginner</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('geometry', 'circles')">
+                                <h4>Circles</h4>
+                                <p>Radius, diameter, circumference, and area</p>
+                                <span class="lesson-badge">Beginner</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('geometry', 'pythagorean')">
+                                <h4>Pythagorean Theorem</h4>
+                                <p>Understanding a² + b² = c²</p>
+                                <span class="lesson-badge">Intermediate</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trigonometry Lessons -->
+                    <div class="topic-lessons">
+                        <div class="topic-header">
+                            <span class="topic-icon-large">📊</span>
+                            <h3>Trigonometry</h3>
+                        </div>
+                        <div class="lesson-cards">
+                            <div class="lesson-card" onclick="openLesson('trigonometry', 'intro-trig')">
+                                <h4>Introduction to Trigonometry</h4>
+                                <p>Sine, cosine, and tangent basics</p>
+                                <span class="lesson-badge">Beginner</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('trigonometry', 'unit-circle')">
+                                <h4>The Unit Circle</h4>
+                                <p>Understanding angles and coordinates</p>
+                                <span class="lesson-badge">Intermediate</span>
+                            </div>
+                            <div class="lesson-card" onclick="openLesson('trigonometry', 'identities')">
+                                <h4>Trigonometric Identities</h4>
+                                <p>Key formulas and relationships</p>
+                                <span class="lesson-badge">Advanced</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Practice View -->
+            <div id="practice-view" class="hidden">
+                <div class="welcome-section">
+                    <h2>Practice Your Skills</h2>
+                    <p>Select a topic and difficulty level to begin</p>
+                </div>
+
+                <!-- Math Topics -->
+                <div class="topics-grid">
+                    <div class="topic-card" onclick="selectTopic('algebra')">
+                        <div class="topic-icon">📐</div>
+                        <h3>Algebra</h3>
+                        <p>Equations, expressions, and functions</p>
+                        <div class="topic-stats">
+                            <span class="stat">🎯 0 completed</span>
+                        </div>
+                    </div>
+
+                    <div class="topic-card" onclick="selectTopic('geometry')">
+                        <div class="topic-icon">📏</div>
+                        <h3>Geometry</h3>
+                        <p>Shapes, angles, and spatial reasoning</p>
+                        <div class="topic-stats">
+                            <span class="stat">🎯 0 completed</span>
+                        </div>
+                    </div>
+
+                    <div class="topic-card" onclick="selectTopic('trigonometry')">
+                        <div class="topic-icon">📊</div>
+                        <h3>Trigonometry</h3>
+                        <p>Sine, cosine, and triangle relationships</p>
+                        <div class="topic-stats">
+                            <span class="stat">🎯 0 completed</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Practice Mode Selection -->
+                <div class="mode-section">
+                    <h3>Practice Mode</h3>
+                    <div class="mode-buttons">
+                        <button class="mode-button" onclick="setPracticeMode('regular')">
+                            <span class="mode-icon">📝</span>
+                            <span class="mode-label">Regular Practice</span>
+                            <span class="mode-desc">Learn at your own pace</span>
+                        </button>
+                        <button class="mode-button" onclick="setPracticeMode('timed')">
+                            <span class="mode-icon">⏱️</span>
+                            <span class="mode-label">Timed Challenge</span>
+                            <span class="mode-desc">Race against the clock</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Difficulty Selection -->
+                <div class="difficulty-section">
+                    <h3>Difficulty Level</h3>
+                    <div class="difficulty-buttons">
+                        <button class="difficulty-btn easy" onclick="setDifficulty('easy')">
+                            <span class="diff-icon">😊</span>
+                            Easy
+                        </button>
+                        <button class="difficulty-btn medium" onclick="setDifficulty('medium')">
+                            <span class="diff-icon">🤔</span>
+                            Medium
+                        </button>
+                        <button class="difficulty-btn hard" onclick="setDifficulty('hard')">
+                            <span class="diff-icon">🔥</span>
+                            Hard
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <div class="start-section">
+                    <button class="start-button" onclick="startPractice()" id="start-btn" disabled>
+                        <span>Select a topic and difficulty to start</span>
+                    </button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Lesson Viewer -->
+        <div class="lesson-viewer hidden" id="lesson-viewer">
+            <div class="lesson-container">
+                <button class="back-button" onclick="closeLesson()">← Back to Lessons</button>
+                
+                <div class="lesson-header">
+                    <span class="lesson-topic-badge" id="lesson-topic-badge"></span>
+                    <h1 id="lesson-title">Lesson Title</h1>
+                    <p class="lesson-subtitle" id="lesson-subtitle">Lesson description</p>
+                </div>
+
+                <div class="lesson-content" id="lesson-content">
+                    <!-- Lesson content will be loaded here -->
+                </div>
+
+                <div class="lesson-footer">
+                    <button onclick="closeLesson()" class="secondary-button">Back to Lessons</button>
+                    <button onclick="startPracticeFromLesson()" class="primary-button">Practice This Topic</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile View -->
+        <div class="profile-view hidden" id="profile-view">
+            <div class="profile-container">
+                <button class="back-button" onclick="showDashboard()">← Back to Dashboard</button>
+                
+                <h2>Your Profile</h2>
+                
+                <!-- Profile Display -->
+                <div id="profile-display" class="profile-section">
+                    <div class="profile-header">
+                        <img id="profile-img" src="" alt="Profile Picture" class="profile-picture">
+                        <div class="profile-info">
+                            <h3 id="display-name">Loading...</h3>
+                            <p class="email-text"><span id="display-email"></span></p>
+                        </div>
+                    </div>
+                    <div class="profile-bio">
+                        <h4>Bio</h4>
+                        <p id="display-bio">No bio set</p>
+                    </div>
+                    <button onclick="toggleEditMode()" class="secondary-button">Edit Profile</button>
+                </div>
+
+                <!-- Profile Edit -->
+                <div id="profile-edit" class="profile-section hidden">
+                    <h3>Edit Your Profile</h3>
+                    <div class="form-section">
+                        <label for="profile-name">Display Name</label>
+                        <input type="text" id="profile-name" placeholder="Your name">
+                        
+                        <label for="profile-bio">Bio</label>
+                        <textarea id="profile-bio" placeholder="Tell us about yourself..." rows="4"></textarea>
+                        
+                        <label for="profile-picture">Profile Picture URL</label>
+                        <input type="url" id="profile-picture" placeholder="https://example.com/your-image.jpg">
+                        <p class="help-text">Paste a link to an image</p>
+                        
+                        <div class="button-group">
+                            <button onclick="saveProfile()">Save Profile</button>
+                            <button onclick="toggleEditMode()" class="secondary-button">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module" src="app.js"></script>
+</body>
+</html>
