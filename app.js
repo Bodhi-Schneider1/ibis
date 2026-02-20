@@ -183,10 +183,10 @@ const lessonPaths = {
                 ]
             },
             {
-                'linear-equations': {
+                 id: 'linear-equations',
     title: 'Linear Equations',
     subtitle: 'Solve one-variable equations step by step',
-    level: 'Beginner',
+    xpReward: 50,
     sections: [
         {
             type: 'text',
@@ -223,10 +223,10 @@ const lessonPaths = {
 }
             },
             {
-                'solving-inequalities': {
+                id: 'solving-inequalities',
     title: 'Solving Inequalities',
     subtitle: 'Solve and graph one-variable inequalities',
-    level: 'Beginner',
+    xpReward: 50,
     sections: [
         {
             type: 'text',
