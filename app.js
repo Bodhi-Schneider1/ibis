@@ -183,23 +183,85 @@ const lessonPaths = {
                 ]
             },
             {
-                id: 'linear-equations',
-                title: 'Linear Equations',
-                subtitle: 'Solve equations of the form ax + b = c',
-                xpReward: 50,
-                sections: [
-                    { type: 'text', content: '<h3>Linear Equations</h3><p>The general form is <strong>ax + b = c</strong>.</p>' },
-                    { type: 'example', title: 'Example', content: '<p><strong>Solve: 2x + 5 = 13</strong></p><p>2x = 8<br>x = 4</p>' }
-                ]
+                'linear-equations': {
+    title: 'Linear Equations',
+    subtitle: 'Solve one-variable equations step by step',
+    level: 'Beginner',
+    sections: [
+        {
+            type: 'text',
+            content: '<h3>What is a Linear Equation?</h3><p>A linear equation is an equation where the variable has an exponent of 1. It forms a straight line when graphed.</p><p>Example: <strong>2x + 5 = 15</strong></p>'
+        },
+        {
+            type: 'text',
+            content: '<h3>Goal of Solving</h3><p>Our goal is to isolate the variable (get it alone on one side of the equation).</p><p>We use inverse operations to undo addition, subtraction, multiplication, and division.</p>'
+        },
+        {
+            type: 'example',
+            title: 'Example 1: Two-Step Equation',
+            content: '<p><strong>Solve:</strong> 3x + 4 = 19</p><p><strong>Step 1:</strong> Subtract 4 from both sides<br>3x = 15</p><p><strong>Step 2:</strong> Divide both sides by 3<br>x = 5</p><p><strong>Answer:</strong> x = 5</p>'
+        },
+        {
+            type: 'example',
+            title: 'Example 2: Variables on Both Sides',
+            content: '<p><strong>Solve:</strong> 5x - 2 = 3x + 6</p><p><strong>Step 1:</strong> Subtract 3x from both sides<br>2x - 2 = 6</p><p><strong>Step 2:</strong> Add 2 to both sides<br>2x = 8</p><p><strong>Step 3:</strong> Divide by 2<br>x = 4</p><p><strong>Answer:</strong> x = 4</p>'
+        },
+        {
+            type: 'text',
+            content: '<h3>Multi-Step Equations</h3><p>Sometimes you must simplify both sides first before solving.</p><p>Always distribute and combine like terms before isolating the variable.</p>'
+        },
+        {
+            type: 'example',
+            title: 'Example 3: Distributive Property',
+            content: '<p><strong>Solve:</strong> 2(x + 3) = 14</p><p><strong>Step 1:</strong> Distribute<br>2x + 6 = 14</p><p><strong>Step 2:</strong> Subtract 6<br>2x = 8</p><p><strong>Step 3:</strong> Divide by 2<br>x = 4</p><p><strong>Answer:</strong> x = 4</p>'
+        },
+        {
+            type: 'tips',
+            content: '<h4>💡 Key Tips:</h4><ul><li>Do the same operation to both sides of the equation.</li><li>Combine like terms before solving.</li><li>Distribute first if parentheses are present.</li><li>Always check your solution by plugging it back in.</li></ul>'
+        }
+    ]
+}
             },
             {
-                id: 'solving-inequalities',
-                title: 'Solving Inequalities',
-                subtitle: 'Work with <, >, ≤, and ≥ symbols',
-                xpReward: 50,
-                sections: [
-                    { type: 'text', content: '<h3>Inequalities</h3><p>Similar to equations but with inequality symbols.</p>' }
-                ]
+                'solving-inequalities': {
+    title: 'Solving Inequalities',
+    subtitle: 'Solve and graph one-variable inequalities',
+    level: 'Beginner',
+    sections: [
+        {
+            type: 'text',
+            content: '<h3>What is an Inequality?</h3><p>An inequality compares two expressions using symbols like <strong>&lt;</strong>, <strong>&gt;</strong>, <strong>&le;</strong>, or <strong>&ge;</strong>.</p><p>Example: <strong>2x + 3 &gt; 7</strong></p><p>Instead of one solution, inequalities usually have a range of solutions.</p>'
+        },
+        {
+            type: 'text',
+            content: '<h3>Key Difference from Equations</h3><p>You solve inequalities the same way as equations <em>except</em> for one important rule:</p><p><strong>If you multiply or divide by a negative number, you must flip the inequality symbol.</strong></p>'
+        },
+        {
+            type: 'example',
+            title: 'Example 1: Two-Step Inequality',
+            content: '<p><strong>Solve:</strong> 3x + 4 &lt; 19</p><p><strong>Step 1:</strong> Subtract 4 from both sides<br>3x &lt; 15</p><p><strong>Step 2:</strong> Divide both sides by 3<br>x &lt; 5</p><p><strong>Solution:</strong> All numbers less than 5</p>'
+        },
+        {
+            type: 'example',
+            title: 'Example 2: Flip the Sign',
+            content: '<p><strong>Solve:</strong> -2x &gt; 8</p><p><strong>Step 1:</strong> Divide both sides by -2</p><p>Because we divided by a negative, we flip the sign:</p><p>x &lt; -4</p><p><strong>Solution:</strong> All numbers less than -4</p>'
+        },
+        {
+            type: 'text',
+            content: '<h3>Graphing Inequalities on a Number Line</h3><ul><li><strong>Open circle</strong> for &lt; or &gt; (not included)</li><li><strong>Closed circle</strong> for &le; or &ge; (included)</li><li>Shade left for &lt;</li><li>Shade right for &gt;</li></ul>'
+        },
+        {
+            type: 'example',
+            title: 'Example 3: Graphing',
+            content: '<p><strong>Solve and Graph:</strong> x &ge; 2</p><p><strong>Solution:</strong> Closed circle at 2, shade to the right.</p>'
+        },
+        {
+            type: 'tips',
+            content: '<h4>💡 Key Tips:</h4><ul><li>Solve inequalities just like equations.</li><li>Always flip the sign when multiplying or dividing by a negative.</li><li>Check your solution with a test number.</li><li>Remember: inequalities usually have many solutions.</li></ul>'
+        }
+    ]
+}
+
             },
             {
                 id: 'graphing-lines',
