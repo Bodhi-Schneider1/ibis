@@ -3,6 +3,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { lessonPaths } from './lessons.js';
+import { generators } from './generators.js';
 
 // Your Firebase configuration
 // TODO: Replace this with your actual Firebase config from Firebase Console
@@ -555,12 +556,13 @@ async function openLessonFromPath(topic, lessonId) {
     const lesson = lessonPaths[topic].lessons.find(l => l.id === lessonId);
     if (!lesson) return;
 
-    // Count practice problems in this lesson
+    // Count all practice problems (static + generated)
     let practiceCount = 0;
     lesson.sections.forEach(s => {
         if (s.type === 'practice') practiceCount += s.problems.length;
+        if (s.type === 'generated_practice') practiceCount += s.generators.length;
     });
-    lessonPracticeState = { totalProblems: practiceCount, completed: 0, answeredIndices: new Set() };
+    lessonPracticeState = { totalProblems: practiceCount, completed: 0, answeredIndices: new Set(), generatedProblems: {} };
 
     document.getElementById('lesson-topic-badge').textContent = topic.charAt(0).toUpperCase() + topic.slice(1);
     document.getElementById('lesson-title').textContent = lesson.title;
@@ -587,10 +589,41 @@ async function openLessonFromPath(topic, lessonId) {
             `;
         } else if (section.type === 'practice') {
             contentHtml += `<div class="lesson-practice-block">`;
-            contentHtml += `<h4 class="practice-block-title">✏️ Guided Practice</h4>`;
+            contentHtml += `<h4 class="practice-block-title">✏️ Check Your Understanding</h4>`;
             section.problems.forEach((prob, i) => {
                 const gIdx = practiceGlobalIndex;
                 const labels = ['A', 'B', 'C', 'D'];
+                contentHtml += `
+                    <div class="lesson-practice-item" id="lp-item-${gIdx}">
+                        <div class="lp-question-row">
+                            <span class="lp-number" id="lp-number-${gIdx}">${gIdx + 1}</span>
+                            <span class="lp-question">${prob.question}</span>
+                        </div>
+                        <div class="lp-choices" id="lp-choices-${gIdx}">
+                            ${prob.choices.map((ch, ci) => `
+                                <button class="lp-choice" data-gidx="${gIdx}" data-cidx="${ci}" onclick="handleLessonPractice(${gIdx}, ${ci})">
+                                    <span class="lp-label">${labels[ci]}</span>${ch}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div class="lp-feedback hidden" id="lp-feedback-${gIdx}"></div>
+                    </div>
+                `;
+                practiceGlobalIndex++;
+            });
+            contentHtml += `</div>`;
+        } else if (section.type === 'generated_practice') {
+            contentHtml += `<div class="lesson-practice-block generated">`;
+            contentHtml += `<h4 class="practice-block-title">✏️ Try It Yourself</h4>`;
+            section.generators.forEach(genId => {
+                const gIdx = practiceGlobalIndex;
+                const labels = ['A', 'B', 'C', 'D'];
+                // Call the generator to create a fresh problem
+                const genFunc = generators[genId];
+                if (!genFunc) { practiceGlobalIndex++; return; }
+                const prob = genFunc();
+                // Store for answer checking
+                lessonPracticeState.generatedProblems[gIdx] = prob;
                 contentHtml += `
                     <div class="lesson-practice-item" id="lp-item-${gIdx}">
                         <div class="lp-question-row">
@@ -660,24 +693,32 @@ async function openLessonFromPath(topic, lessonId) {
 function handleLessonPractice(gIdx, choiceIdx) {
     if (lessonPracticeState.answeredIndices.has(gIdx)) return;
 
-    const topic = currentTopic;
-    const lessonId = currentLessonId.substring(topic.length + 1);
-    const lesson = lessonPaths[topic].lessons.find(l => l.id === lessonId);
-    if (!lesson) return;
+    // Check if this is a generated problem first
+    let targetProblem = lessonPracticeState.generatedProblems[gIdx] || null;
 
-    // Find the practice problem by global index
-    let practiceGlobalIndex = 0;
-    let targetProblem = null;
-    for (const section of lesson.sections) {
-        if (section.type === 'practice') {
-            for (const prob of section.problems) {
-                if (practiceGlobalIndex === gIdx) {
-                    targetProblem = prob;
-                    break;
+    // If not generated, search static practice sections
+    if (!targetProblem) {
+        const topic = currentTopic;
+        const lessonId = currentLessonId.substring(topic.length + 1);
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === lessonId);
+        if (!lesson) return;
+
+        let practiceGlobalIndex = 0;
+        for (const section of lesson.sections) {
+            if (section.type === 'practice') {
+                for (const prob of section.problems) {
+                    if (practiceGlobalIndex === gIdx) {
+                        targetProblem = prob;
+                        break;
+                    }
+                    practiceGlobalIndex++;
                 }
-                practiceGlobalIndex++;
+                if (targetProblem) break;
+            } else if (section.type === 'generated_practice') {
+                for (const genId of section.generators) {
+                    practiceGlobalIndex++;
+                }
             }
-            if (targetProblem) break;
         }
     }
     if (!targetProblem) return;
