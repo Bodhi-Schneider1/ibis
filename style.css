@@ -1164,6 +1164,11 @@ a:hover {
     border: 2px solid #e0d0f0;
 }
 
+.lesson-practice-block.generated {
+    background: #f0f7ff;
+    border-color: #d0e0f8;
+}
+
 .practice-block-title {
     color: #6c3fa0;
     font-size: 1.3em;
