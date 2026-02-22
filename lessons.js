@@ -34,6 +34,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['identify-parts'] },
                     { type: 'practice', problems: [
                         { question: 'Evaluate <strong>4x + 1</strong> when x = 5.', choices: ['9', '21', '25', '16'], correctIndex: 1, explanation: '4(5) + 1 = 20 + 1 = <strong>21</strong>' },
+                        { question: 'Evaluate <strong>7x − 3</strong> when x = 4.', choices: ['21', '25', '28', '31'], correctIndex: 1, explanation: '7(4) − 3 = 28 − 3 = <strong>25</strong>' },
+                        { question: 'In <strong>9x + 6</strong>, what is the coefficient of x?', choices: ['6', '9', '15', 'x'], correctIndex: 1, explanation: 'The coefficient is the number multiplying x: <strong>9</strong>.' },
+                        { question: 'In <strong>5x + 11</strong>, what is the constant term?', choices: ['5', 'x', '11', '16'], correctIndex: 2, explanation: 'The constant has no variable attached: <strong>11</strong>.' },
+                        { question: 'Which of these is an <strong>equation</strong> (not an expression)?', choices: ['3x + 2', '5x − 7', '2x + 4 = 10', '4x²'], correctIndex: 2, explanation: 'An equation has an equals sign: <strong>2x + 4 = 10</strong>.' },
                     ]}
                 ]
             },
@@ -58,6 +62,10 @@ export const lessonPaths = {
                     { type: 'tips', content: `<h4>💡 Pro Tips</h4><ul><li>Undo addition/subtraction first, then multiplication/division.</li><li>Always <strong>check</strong> by plugging your answer back in.</li></ul>` },
                     { type: 'practice', problems: [
                         { question: 'Solve: <strong>5x + 3 = 28</strong>', choices: ['x = 4', 'x = 5', 'x = 6', 'x = 7'], correctIndex: 1, explanation: '5x = 25 → x = <strong>5</strong>' },
+                        { question: 'Solve: <strong>3x − 7 = 11</strong>', choices: ['x = 4', 'x = 5', 'x = 6', 'x = 7'], correctIndex: 2, explanation: '3x = 18 → x = <strong>6</strong>' },
+                        { question: 'Solve: <strong>2x + 9 = 3</strong>', choices: ['x = −3', 'x = 3', 'x = 6', 'x = −6'], correctIndex: 0, explanation: '2x = −6 → x = <strong>−3</strong>' },
+                        { question: 'Solve: <strong>4x − 1 = 4x + 5</strong>', choices: ['x = 0', 'x = 1', 'x = 6', 'No solution'], correctIndex: 3, explanation: 'Subtract 4x: −1 = 5 — always false → <strong>no solution</strong>.' },
+                        { question: 'Which step comes <em>first</em> when solving <strong>6x + 4 = 22</strong>?', choices: ['Divide by 6', 'Subtract 4', 'Multiply by 6', 'Add 4'], correctIndex: 1, explanation: 'Undo addition first: <strong>subtract 4</strong> from both sides.' },
                     ]}
                 ]
             },
@@ -79,6 +87,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['inequality-flip'] },
                     { type: 'practice', problems: [
                         { question: 'Solve: <strong>4x − 2 > 14</strong>', choices: ['x > 3', 'x > 4', 'x < 4', 'x > 2'], correctIndex: 1, explanation: '4x > 16 → x > <strong>4</strong>' },
+                        { question: 'Solve: <strong>3x + 5 ≤ 20</strong>', choices: ['x ≤ 5', 'x ≤ 8', 'x ≤ 3', 'x ≤ 7'], correctIndex: 0, explanation: '3x ≤ 15 → x ≤ <strong>5</strong>' },
+                        { question: 'Solve: <strong>−2x > 8</strong>. What happens to the sign?', choices: ['Stays the same: x > −4', 'Flips: x < −4', 'Stays: x > 4', 'Flips: x < 4'], correctIndex: 1, explanation: 'Dividing by negative flips the sign → x < <strong>−4</strong>.' },
+                        { question: 'Solve: <strong>5x − 3 ≥ 2x + 9</strong>', choices: ['x ≥ 2', 'x ≥ 4', 'x ≥ 6', 'x ≥ 3'], correctIndex: 1, explanation: '3x ≥ 12 → x ≥ <strong>4</strong>' },
+                        { question: 'Which graph shows <strong>x < 3</strong>?', choices: ['Closed dot at 3, arrow right', 'Open dot at 3, arrow left', 'Open dot at 3, arrow right', 'Closed dot at 3, arrow left'], correctIndex: 1, explanation: 'Strict inequality → <strong>open dot</strong>; x < 3 goes to the left.' },
                     ]}
                 ]
             },
@@ -100,6 +112,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['identify-slope-intercept'] },
                     { type: 'practice', problems: [
                         { question: 'In <strong>y = 3x − 5</strong>, what is the slope?', choices: ['−5', '3', '5', '−3'], correctIndex: 1, explanation: 'm = <strong>3</strong>' },
+                        { question: 'In <strong>y = 3x − 5</strong>, what is the y-intercept?', choices: ['3', '5', '−5', '0'], correctIndex: 2, explanation: 'b = <strong>−5</strong>' },
+                        { question: 'Slope between (0, 2) and (4, 10)?', choices: ['1', '2', '3', '4'], correctIndex: 1, explanation: 'm = (10−2)/(4−0) = 8/4 = <strong>2</strong>' },
+                        { question: 'A line with slope <strong>0</strong> is?', choices: ['Vertical', 'Horizontal', 'Diagonal', 'Undefined'], correctIndex: 1, explanation: 'Zero slope → <strong>horizontal</strong> line.' },
+                        { question: 'Which equation has a <strong>negative slope</strong>?', choices: ['y = 2x + 1', 'y = x + 3', 'y = −4x + 7', 'y = 5x − 2'], correctIndex: 2, explanation: 'y = <strong>−4x</strong> + 7 has slope −4.' },
                     ]}
                 ]
             },
@@ -122,7 +138,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['solve-system'] },
                     { type: 'generated_practice', generators: ['solve-system'] },
                     { type: 'practice', problems: [
-                        { question: 'Solve: <strong>y = x + 3</strong> and <strong>2x + y = 12</strong>. What is y?', choices: ['3', '5', '6', '8'], correctIndex: 2, explanation: '2x + x + 3 = 12 → 3x = 9 → x = 3, y = <strong>6</strong>' }
+                        { question: 'Solve: <strong>y = x + 3</strong> and <strong>2x + y = 12</strong>. What is y?', choices: ['3', '5', '6', '8'], correctIndex: 2, explanation: '2x + x + 3 = 12 → 3x = 9 → x = 3, y = <strong>6</strong>' },
+                        { question: 'Solve: <strong>x + y = 8</strong> and <strong>x − y = 2</strong>. What is x?', choices: ['3', '5', '4', '6'], correctIndex: 1, explanation: 'Add equations: 2x = 10 → x = <strong>5</strong>' },
+                        { question: 'A system has <strong>no solution</strong> when the lines are:', choices: ['Identical', 'Perpendicular', 'Parallel', 'Intersecting'], correctIndex: 2, explanation: '<strong>Parallel</strong> lines never meet → no solution.' },
+                        { question: 'Solve by substitution: <strong>y = 2x</strong> and <strong>x + y = 9</strong>. Find x.', choices: ['2', '3', '4', '6'], correctIndex: 1, explanation: 'x + 2x = 9 → 3x = 9 → x = <strong>3</strong>' },
                     ]}
                 ]
             },
@@ -144,6 +163,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['solve-quadratic-simple'] },
                     { type: 'practice', problems: [
                         { question: 'Discriminant of <strong>x² + 4x + 4 = 0</strong>?', choices: ['0', '4', '8', '16'], correctIndex: 0, explanation: '16 − 16 = <strong>0</strong> → one solution' },
+                        { question: 'How many real solutions when discriminant > 0?', choices: ['0', '1', '2', '3'], correctIndex: 2, explanation: 'Positive discriminant → <strong>two</strong> distinct real solutions.' },
+                        { question: 'Solve: <strong>x² − 9 = 0</strong>', choices: ['x = 3 only', 'x = ±3', 'x = 9', 'x = ±9'], correctIndex: 1, explanation: 'x² = 9 → x = <strong>±3</strong>' },
+                        { question: 'In the quadratic formula, what does <strong>b² − 4ac</strong> represent?', choices: ['The solution', 'The vertex', 'The discriminant', 'The axis of symmetry'], correctIndex: 2, explanation: 'b² − 4ac is called the <strong>discriminant</strong>.' },
+                        { question: 'Discriminant of <strong>x² + 2x + 5 = 0</strong>?', choices: ['−16', '−24', '16', '24'], correctIndex: 0, explanation: '4 − 20 = <strong>−16</strong> → no real solutions.' },
                     ]}
                 ]
             },
@@ -165,6 +188,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['factor-diff-squares'] },
                     { type: 'practice', problems: [
                         { question: 'Factor: <strong>x² + 5x + 6</strong>', choices: ['(x+1)(x+6)', '(x+2)(x+3)', '(x+5)(x+1)', '(x−2)(x−3)'], correctIndex: 1, explanation: '2 × 3 = 6, 2 + 3 = 5 → <strong>(x+2)(x+3)</strong>' },
+                        { question: 'Factor: <strong>x² − 9</strong>', choices: ['(x−3)²', '(x+9)(x−1)', '(x+3)(x−3)', '(x−9)(x+1)'], correctIndex: 2, explanation: 'Difference of squares: <strong>(x+3)(x−3)</strong>' },
+                        { question: 'Factor: <strong>x² − 7x + 10</strong>', choices: ['(x−2)(x−5)', '(x+2)(x+5)', '(x−1)(x−10)', '(x+2)(x−5)'], correctIndex: 0, explanation: '−2 × −5 = 10, −2 + −5 = −7 → <strong>(x−2)(x−5)</strong>' },
+                        { question: 'Factor: <strong>x² − 16</strong>', choices: ['(x−4)²', '(x+8)(x−2)', '(x+4)(x−4)', '(x+16)(x−1)'], correctIndex: 2, explanation: 'Difference of squares: <strong>(x+4)(x−4)</strong>' },
+                        { question: 'Which pair multiplies to <strong>12</strong> and adds to <strong>7</strong>?', choices: ['2 and 5', '3 and 4', '6 and 1', '2 and 6'], correctIndex: 1, explanation: '<strong>3 × 4 = 12</strong> and <strong>3 + 4 = 7</strong>.' },
                     ]}
                 ]
             },
@@ -190,6 +217,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['exponent-evaluate'] },
                     { type: 'practice', problems: [
                         { question: 'What is <strong>4⁰</strong>?', choices: ['0', '4', '1', 'Undefined'], correctIndex: 2, explanation: 'Any nonzero number to the 0 power = <strong>1</strong>' },
+                        { question: 'Simplify: <strong>x³ × x⁵</strong>', choices: ['x⁸', 'x¹⁵', 'x²', 'x^35'], correctIndex: 0, explanation: 'Add exponents: 3 + 5 = <strong>x⁸</strong>' },
+                        { question: 'Simplify: <strong>x⁶ ÷ x²</strong>', choices: ['x³', 'x⁴', 'x⁸', 'x¹²'], correctIndex: 1, explanation: 'Subtract exponents: 6 − 2 = <strong>x⁴</strong>' },
+                        { question: 'Simplify: <strong>(x²)⁴</strong>', choices: ['x⁶', 'x⁸', 'x²', 'x¹⁶'], correctIndex: 1, explanation: 'Multiply exponents: 2 × 4 = <strong>x⁸</strong>' },
+                        { question: 'What is <strong>2⁻³</strong>?', choices: ['−8', '−6', '1/8', '1/6'], correctIndex: 2, explanation: 'a⁻ⁿ = 1/aⁿ → 2⁻³ = <strong>1/8</strong>' },
                     ]}
                 ]
             },
@@ -211,6 +242,9 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['evaluate-function-squared'] },
                     { type: 'practice', problems: [
                         { question: 'If <strong>f(x) = 3x − 7</strong>, what is f(5)?', choices: ['8', '15', '22', '2'], correctIndex: 0, explanation: '3(5) − 7 = <strong>8</strong>' },
+                        { question: 'If <strong>g(x) = x² + 1</strong>, what is g(4)?', choices: ['9', '17', '16', '5'], correctIndex: 1, explanation: '4² + 1 = 16 + 1 = <strong>17</strong>' },
+                        { question: 'Which set of pairs is <em>not</em> a function?', choices: ['{(1,2),(2,3),(3,4)}', '{(1,5),(2,5),(3,5)}', '{(1,2),(1,3),(2,4)}', '{(0,0),(1,1),(2,2)}'], correctIndex: 2, explanation: 'x = 1 maps to both 2 and 3 — not a function (<strong>one input, two outputs</strong>).' },
+                        { question: 'If <strong>h(x) = 2x + 6</strong>, find x when h(x) = 14.', choices: ['x = 4', 'x = 5', 'x = 6', 'x = 10'], correctIndex: 0, explanation: '2x + 6 = 14 → 2x = 8 → x = <strong>4</strong>' },
                     ]}
                 ]
             },
@@ -231,6 +265,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['find-excluded-value'] },
                     { type: 'practice', problems: [
                         { question: 'Simplify: <strong>(x² − 4)/(x − 2)</strong>', choices: ['x − 2', 'x + 2', 'x² − 2', '2x'], correctIndex: 1, explanation: '(x+2)(x−2)/(x−2) = <strong>x + 2</strong>' },
+                        { question: 'What value is excluded in <strong>3/(x − 5)</strong>?', choices: ['x = 3', 'x = 0', 'x = 5', 'x = −5'], correctIndex: 2, explanation: 'Denominator can\'t be 0: x − 5 ≠ 0 → x ≠ <strong>5</strong>' },
+                        { question: 'Simplify: <strong>(2x² + 4x) / (2x)</strong>', choices: ['x + 4', 'x + 2', '2x + 4', 'x² + 4'], correctIndex: 1, explanation: 'Factor: 2x(x+2)/2x = <strong>x + 2</strong>' },
+                        { question: 'What excluded value applies to <strong>(x+1)/(x²−9)</strong>?', choices: ['x ≠ ±1', 'x ≠ ±3', 'x ≠ 9', 'x ≠ 0'], correctIndex: 1, explanation: 'x² − 9 = (x+3)(x−3) → x ≠ <strong>±3</strong>' },
+                        { question: 'Simplify: <strong>(x² + 6x + 9)/(x + 3)</strong>', choices: ['x − 3', 'x + 9', 'x + 3', 'x²'], correctIndex: 2, explanation: '(x+3)²/(x+3) = <strong>x + 3</strong>' },
                     ]}
                 ]
             }
@@ -268,6 +306,9 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['geo-basic-definitions'] },
                     { type: 'practice', problems: [
                         { question: 'Which has exactly <strong>two endpoints</strong>?', choices: ['Line', 'Ray', 'Line segment', 'Point'], correctIndex: 2, explanation: 'A <strong>line segment</strong> has two endpoints.' },
+                        { question: 'A <strong>ray</strong> has:', choices: ['No endpoints', 'Two endpoints', 'One endpoint', 'Three endpoints'], correctIndex: 2, explanation: 'A ray has <strong>one endpoint</strong> and extends infinitely in one direction.' },
+                        { question: 'How many points define a unique line?', choices: ['1', '2', '3', '4'], correctIndex: 1, explanation: '<strong>2</strong> points define exactly one line.' },
+                        { question: 'A <strong>plane</strong> has how many dimensions?', choices: ['0', '1', '2', '3'], correctIndex: 2, explanation: 'A plane is a flat <strong>2-dimensional</strong> surface.' },
                     ]}
                 ]
             },
@@ -288,6 +329,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['supplementary-angle'] },
                     { type: 'practice', problems: [
                         { question: 'An angle is 135°. What type?', choices: ['Acute', 'Right', 'Obtuse', 'Straight'], correctIndex: 2, explanation: 'Between 90° and 180°: <strong>obtuse</strong>' },
+                        { question: 'Two angles are complementary. One is 35°. What is the other?', choices: ['145°', '55°', '65°', '45°'], correctIndex: 1, explanation: '90° − 35° = <strong>55°</strong>' },
+                        { question: 'Two angles are supplementary. One is 110°. What is the other?', choices: ['70°', '80°', '90°', '250°'], correctIndex: 0, explanation: '180° − 110° = <strong>70°</strong>' },
+                        { question: 'A right angle measures exactly:', choices: ['45°', '90°', '180°', '360°'], correctIndex: 1, explanation: 'A right angle = <strong>90°</strong>.' },
+                        { question: 'Vertical angles are always:', choices: ['Supplementary', 'Complementary', 'Equal', 'Adjacent'], correctIndex: 2, explanation: 'Vertical angles (formed by intersecting lines) are always <strong>equal</strong>.' },
                     ]}
                 ]
             },
@@ -308,6 +353,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['triangle-missing-angle'] },
                     { type: 'practice', problems: [
                         { question: 'A triangle has angles 60°, 60°, 60°. Type?', choices: ['Isosceles', 'Equilateral', 'Scalene', 'Right'], correctIndex: 1, explanation: 'All equal → <strong>equilateral</strong>' },
+                        { question: 'A triangle has angles 90°, 45°, 45°. What type by angles?', choices: ['Equilateral', 'Obtuse', 'Right', 'Acute'], correctIndex: 2, explanation: 'Contains a 90° angle → <strong>right</strong> triangle.' },
+                        { question: 'Two angles of a triangle are 50° and 70°. What is the third?', choices: ['40°', '50°', '60°', '80°'], correctIndex: 2, explanation: '180° − 50° − 70° = <strong>60°</strong>' },
+                        { question: 'An <strong>isosceles</strong> triangle has:', choices: ['No equal sides', '2 equal sides', '3 equal sides', '4 equal sides'], correctIndex: 1, explanation: 'Isosceles = <strong>2 equal sides</strong> (and 2 equal base angles).' },
+                        { question: 'Can a triangle have angles 90°, 95°, and 5°?', choices: ['Yes', 'No — sum exceeds 180°', 'No — must have equal angles', 'Only if it is scalene'], correctIndex: 1, explanation: '90 + 95 + 5 = 190° > 180° → <strong>impossible</strong>.' },
                     ]}
                 ]
             },
@@ -326,7 +375,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['quad-missing-angle'] },
                     { type: 'practice', problems: [
                         { question: 'Sum of angles in any quadrilateral?', choices: ['180°', '270°', '360°', '540°'], correctIndex: 2, explanation: '<strong>360°</strong>' },
-                        { question: '4 equal sides but not necessarily right angles?', choices: ['Square', 'Rectangle', 'Rhombus', 'Trapezoid'], correctIndex: 2, explanation: '<strong>Rhombus</strong>' }
+                        { question: '4 equal sides but not necessarily right angles?', choices: ['Square', 'Rectangle', 'Rhombus', 'Trapezoid'], correctIndex: 2, explanation: '<strong>Rhombus</strong>' },
+                        { question: 'A rectangle with all 4 sides equal is called a:', choices: ['Rhombus', 'Trapezoid', 'Square', 'Parallelogram'], correctIndex: 2, explanation: 'A rectangle with equal sides is a <strong>square</strong>.' },
+                        { question: 'A trapezoid has exactly how many pairs of parallel sides?', choices: ['0', '1', '2', '4'], correctIndex: 1, explanation: 'A trapezoid has exactly <strong>1</strong> pair of parallel sides.' },
+                        { question: 'Three angles of a quadrilateral are 80°, 90°, and 110°. The fourth is:', choices: ['70°', '80°', '90°', '100°'], correctIndex: 1, explanation: '360° − 80° − 90° − 110° = <strong>80°</strong>' },
                     ]}
                 ]
             },
@@ -348,6 +400,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['circle-circumference'] },
                     { type: 'practice', problems: [
                         { question: 'Which formula gives <strong>area</strong>?', choices: ['2πr', 'πd', 'πr²', '2πr²'], correctIndex: 2, explanation: 'Area = <strong>πr²</strong>' },
+                        { question: 'A circle has radius 7. What is its diameter?', choices: ['7', '14', '21', '49'], correctIndex: 1, explanation: 'd = 2r = 2 × 7 = <strong>14</strong>' },
+                        { question: 'Circle with r = 3. Circumference? (Use π ≈ 3.14)', choices: ['9.42', '18.84', '28.26', '6.28'], correctIndex: 1, explanation: 'C = 2πr = 2 × 3.14 × 3 ≈ <strong>18.84</strong>' },
+                        { question: 'Circle with r = 5. Area? (Use π ≈ 3.14)', choices: ['15.7', '31.4', '78.5', '50'], correctIndex: 2, explanation: 'A = πr² = 3.14 × 25 ≈ <strong>78.5</strong>' },
+                        { question: 'If diameter = 10, what is the radius?', choices: ['10', '20', '5', '100'], correctIndex: 2, explanation: 'r = d/2 = 10/2 = <strong>5</strong>' },
                     ]}
                 ]
             },
@@ -371,6 +427,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['triangle-area'] },
                     { type: 'practice', problems: [
                         { question: 'Rectangle: length 12, width 7. Area?', choices: ['38', '84', '19', '42'], correctIndex: 1, explanation: '12 × 7 = <strong>84</strong>' },
+                        { question: 'Rectangle: length 12, width 7. Perimeter?', choices: ['38', '84', '19', '26'], correctIndex: 0, explanation: 'P = 2(12 + 7) = 2(19) = <strong>38</strong>' },
+                        { question: 'Triangle with base 10 and height 6. Area?', choices: ['16', '60', '30', '15'], correctIndex: 2, explanation: 'A = ½ × 10 × 6 = <strong>30</strong>' },
+                        { question: 'Parallelogram with base 8 and height 5. Area?', choices: ['13', '26', '40', '20'], correctIndex: 2, explanation: 'A = base × height = 8 × 5 = <strong>40</strong>' },
+                        { question: 'Trapezoid: b₁ = 6, b₂ = 10, height = 4. Area?', choices: ['32', '40', '16', '24'], correctIndex: 0, explanation: 'A = ½(6+10) × 4 = ½ × 16 × 4 = <strong>32</strong>' },
                     ]}
                 ]
             },
@@ -393,6 +453,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['find-leg'] },
                     { type: 'practice', problems: [
                         { question: 'Legs 3 and 4. Hypotenuse?', choices: ['7', '5', '6', '12'], correctIndex: 1, explanation: '9 + 16 = 25 → √25 = <strong>5</strong>' },
+                        { question: 'Legs 5 and 12. Hypotenuse?', choices: ['13', '17', '10', '15'], correctIndex: 0, explanation: '25 + 144 = 169 → √169 = <strong>13</strong>' },
+                        { question: 'Hypotenuse = 10, one leg = 6. Other leg?', choices: ['4', '6', '8', '12'], correctIndex: 2, explanation: 'b² = 100 − 36 = 64 → b = <strong>8</strong>' },
+                        { question: 'Is 6, 8, 10 a Pythagorean triple?', choices: ['Yes', 'No', 'Only if it is a right triangle', 'Only for whole numbers'], correctIndex: 0, explanation: '36 + 64 = 100 ✓ → <strong>Yes</strong>' },
+                        { question: 'In a² + b² = c², which side is c?', choices: ['Any side', 'The shortest', 'The hypotenuse', 'Either leg'], correctIndex: 2, explanation: 'c is always the <strong>hypotenuse</strong> — the longest side, opposite the right angle.' },
                     ]}
                 ]
             },
@@ -411,6 +475,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['scale-factor'] },
                     { type: 'practice', problems: [
                         { question: 'If two figures are congruent, what must be true?', choices: ['Same shape only', 'Same size only', 'Same shape and size', 'Same area only'], correctIndex: 2, explanation: '<strong>Same shape and same size.</strong>' },
+                        { question: 'Two triangles are similar with scale factor 3. If one side is 4, what is the corresponding side?', choices: ['4', '7', '12', '3'], correctIndex: 2, explanation: '4 × 3 = <strong>12</strong>' },
+                        { question: 'Similar figures have equal:', choices: ['Side lengths', 'Angles and side lengths', 'Angles only', 'Perimeters'], correctIndex: 2, explanation: 'Similar figures have equal <strong>angles</strong>; sides are proportional, not necessarily equal.' },
+                        { question: 'Scale factor = 2. Area scales by:', choices: ['2', '4', '6', '8'], correctIndex: 1, explanation: 'Area scales by k² = 2² = <strong>4</strong>' },
+                        { question: 'Which congruence shortcut uses two sides and the included angle?', choices: ['SSS', 'AAS', 'SAS', 'ASA'], correctIndex: 2, explanation: '<strong>SAS</strong> — Side-Angle-Side.' },
                     ]}
                 ]
             },
@@ -434,6 +502,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['cube-surface-area'] },
                     { type: 'practice', problems: [
                         { question: 'Volume of a cube with side 4?', choices: ['12', '16', '48', '64'], correctIndex: 3, explanation: '4³ = <strong>64</strong>' },
+                        { question: 'Surface area of a cube with side 3?', choices: ['18', '27', '54', '36'], correctIndex: 2, explanation: 'SA = 6s² = 6 × 9 = <strong>54</strong>' },
+                        { question: 'Volume of a rectangular prism: l=5, w=4, h=3?', choices: ['47', '60', '24', '94'], correctIndex: 1, explanation: 'V = 5 × 4 × 3 = <strong>60</strong>' },
+                        { question: 'Which formula gives cylinder volume?', choices: ['2πr²h', 'πr²h', '4πr³/3', '2πrh'], correctIndex: 1, explanation: 'Cylinder volume = <strong>πr²h</strong>' },
+                        { question: 'Volume of a sphere with r = 3? (Use π ≈ 3.14)', choices: ['28.3', '37.7', '113.1', '75.4'], correctIndex: 2, explanation: 'V = (4/3)π(27) = 4π(9) ≈ <strong>113.1</strong>' },
                     ]}
                 ]
             },
@@ -458,6 +530,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['translate-point'] },
                     { type: 'practice', problems: [
                         { question: 'Which changes the <strong>size</strong>?', choices: ['Translation', 'Reflection', 'Rotation', 'Dilation'], correctIndex: 3, explanation: '<strong>Dilation</strong>' },
+                        { question: 'A point (3, −2) is reflected over the x-axis. New coordinates?', choices: ['(−3, −2)', '(3, 2)', '(−3, 2)', '(2, −3)'], correctIndex: 1, explanation: 'Reflecting over x-axis negates y: <strong>(3, 2)</strong>' },
+                        { question: 'A translation moves every point the same distance. This means it is a ___ transformation.', choices: ['Non-rigid', 'Rigid', 'Scaling', 'Distorting'], correctIndex: 1, explanation: 'Translations preserve size and shape → <strong>rigid</strong>.' },
+                        { question: 'A figure is rotated 360°. It looks:', choices: ['Flipped', 'Stretched', 'The same as original', 'Smaller'], correctIndex: 2, explanation: 'A full 360° rotation brings it back to its <strong>original</strong> position.' },
+                        { question: 'Which transformation is a "flip"?', choices: ['Translation', 'Rotation', 'Reflection', 'Dilation'], correctIndex: 2, explanation: 'A <strong>reflection</strong> flips a figure over a line.' },
                     ]}
                 ]
             }
@@ -491,6 +567,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['trig-ratio-from-sides'] },
                     { type: 'practice', problems: [
                         { question: 'Which ratio = Opposite/Adjacent?', choices: ['Sine', 'Cosine', 'Tangent', 'Secant'], correctIndex: 2, explanation: '<strong>Tangent</strong> (TOA)' },
+                        { question: 'Which ratio = Adjacent/Hypotenuse?', choices: ['Sine', 'Cosine', 'Tangent', 'Cosecant'], correctIndex: 1, explanation: '<strong>Cosine</strong> (CAH)' },
+                        { question: 'Opp = 5, Hyp = 13. What is sin(θ)?', choices: ['13/5', '5/13', '12/13', '5/12'], correctIndex: 1, explanation: 'sin = O/H = <strong>5/13</strong>' },
+                        { question: 'In SOHCAHTOA, what does the "H" stand for?', choices: ['Height', 'Horizontal', 'Hypotenuse', 'Half'], correctIndex: 2, explanation: 'H = <strong>Hypotenuse</strong>' },
+                        { question: 'Opp = 3, Adj = 4, Hyp = 5. What is cos(θ)?', choices: ['3/5', '3/4', '4/5', '4/3'], correctIndex: 2, explanation: 'cos = A/H = <strong>4/5</strong>' },
                     ]}
                 ]
             },
@@ -511,6 +591,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['trig-find-side'] },
                     { type: 'practice', problems: [
                         { question: 'Opp = 8, adj = 6. Which function finds θ?', choices: ['sin = 8/6', 'cos = 8/6', 'tan = 8/6', 'tan = 6/8'], correctIndex: 2, explanation: '<strong>tan(θ) = O/A = 8/6</strong>' },
+                        { question: 'θ = 45°, hyp = 10. What is the opposite side?', choices: ['5', '7.07', '8.66', '10'], correctIndex: 1, explanation: 'opp = 10 × sin(45°) = 10 × 0.707 ≈ <strong>7.07</strong>' },
+                        { question: 'θ = 60°, adj = 4. What is the hypotenuse?', choices: ['4', '6', '8', '2'], correctIndex: 2, explanation: 'cos(60°) = 0.5 = adj/hyp → hyp = 4/0.5 = <strong>8</strong>' },
+                        { question: 'Which inverse function finds an angle from sin?', choices: ['sin⁻¹ (arcsin)', 'cos⁻¹ (arccos)', 'tan⁻¹ (arctan)', 'csc'], correctIndex: 0, explanation: '<strong>arcsin</strong> (or sin⁻¹) reverses sine to give an angle.' },
+                        { question: 'θ = 30°, opp = 5. Find hyp.', choices: ['2.5', '10', '5√3', '5√2'], correctIndex: 1, explanation: 'sin(30°) = 0.5 = 5/hyp → hyp = <strong>10</strong>' },
                     ]}
                 ]
             },
@@ -531,6 +615,9 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['special-30-60-90'] },
                     { type: 'practice', problems: [
                         { question: '45-45-90, legs = 5. Hypotenuse?', choices: ['5', '10', '5√2 ≈ 7.07', '5√3 ≈ 8.66'], correctIndex: 2, explanation: '<strong>5√2 ≈ 7.07</strong>' },
+                        { question: '30-60-90, short leg = 6. Hypotenuse?', choices: ['6', '9', '12', '6√3'], correctIndex: 2, explanation: 'Hyp = 2 × short leg = 2 × 6 = <strong>12</strong>' },
+                        { question: '30-60-90, short leg = 4. Long leg?', choices: ['8', '4√2', '4√3 ≈ 6.93', '4'], correctIndex: 2, explanation: 'Long leg = short leg × √3 = 4√3 ≈ <strong>6.93</strong>' },
+                        { question: '45-45-90, hypotenuse = 10. Each leg = ?', choices: ['5', '10√2', '5√2 ≈ 7.07', '10/√2 ≈ 7.07'], correctIndex: 3, explanation: 'leg = hyp/√2 = 10/√2 ≈ <strong>7.07</strong>' },
                     ]}
                 ]
             },
@@ -551,6 +638,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['unit-circle-coords'] },
                     { type: 'practice', problems: [
                         { question: 'Point at 90° on unit circle?', choices: ['(1,0)', '(0,1)', '(−1,0)', '(0,−1)'], correctIndex: 1, explanation: '<strong>(0, 1)</strong>' },
+                        { question: 'sin(180°) = ?', choices: ['1', '0', '−1', '√2/2'], correctIndex: 1, explanation: 'At 180°, sin = <strong>0</strong>' },
+                        { question: 'cos(0°) = ?', choices: ['0', '1', '−1', '√3/2'], correctIndex: 1, explanation: 'At 0°, cos = <strong>1</strong>' },
+                        { question: 'What are the coordinates at 270°?', choices: ['(0, 1)', '(−1, 0)', '(0, −1)', '(1, 0)'], correctIndex: 2, explanation: 'At 270°: <strong>(0, −1)</strong>' },
+                        { question: 'On the unit circle, every point equals (cos θ, sin θ). Which component is the x-coordinate?', choices: ['sin θ', 'cos θ', 'tan θ', '1/cos θ'], correctIndex: 1, explanation: 'x-coordinate = <strong>cos θ</strong>' },
                     ]}
                 ]
             },
@@ -571,6 +662,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['rad-to-deg'] },
                     { type: 'practice', problems: [
                         { question: 'Convert <strong>90°</strong> to radians.', choices: ['π/6', 'π/4', 'π/3', 'π/2'], correctIndex: 3, explanation: '<strong>π/2</strong>' },
+                        { question: 'Convert <strong>π</strong> radians to degrees.', choices: ['90°', '270°', '180°', '360°'], correctIndex: 2, explanation: 'π × 180/π = <strong>180°</strong>' },
+                        { question: 'Convert <strong>45°</strong> to radians.', choices: ['π/6', 'π/4', 'π/3', 'π/2'], correctIndex: 1, explanation: '45 × π/180 = <strong>π/4</strong>' },
+                        { question: 'How many radians in a full circle?', choices: ['π', '2π', '360', 'π/2'], correctIndex: 1, explanation: 'Full circle = 360° = <strong>2π</strong> radians' },
+                        { question: 'Convert <strong>3π/2</strong> radians to degrees.', choices: ['180°', '270°', '360°', '120°'], correctIndex: 1, explanation: '3π/2 × 180/π = 3 × 90 = <strong>270°</strong>' },
                     ]}
                 ]
             },
@@ -590,6 +685,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['trig-period'] },
                     { type: 'practice', problems: [
                         { question: 'Period of <strong>y = sin(x)</strong>?', choices: ['π', '2π', 'π/2', '4π'], correctIndex: 1, explanation: '<strong>2π</strong>' },
+                        { question: 'Amplitude of <strong>y = 4cos(x)</strong>?', choices: ['1', '2', '4', '8'], correctIndex: 2, explanation: 'Amplitude = |A| = <strong>4</strong>' },
+                        { question: 'Period of <strong>y = sin(3x)</strong>?', choices: ['2π', 'π', '2π/3', '6π'], correctIndex: 2, explanation: 'Period = 2π/|B| = 2π/3 = <strong>2π/3</strong>' },
+                        { question: 'The range of <strong>y = sin(x)</strong> is:', choices: ['[0, 1]', '[−1, 1]', '[0, 2π]', 'All reals'], correctIndex: 1, explanation: 'sin oscillates between −1 and 1: range = <strong>[−1, 1]</strong>' },
+                        { question: 'In y = A·sin(Bx), what does D represent in the full form y = A·sin(Bx+C)+D?', choices: ['Amplitude', 'Period', 'Phase shift', 'Vertical shift'], correctIndex: 3, explanation: 'D is the <strong>vertical shift</strong> (midline).' },
                     ]}
                 ]
             },
@@ -610,6 +709,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['pythagorean-identity'] },
                     { type: 'practice', problems: [
                         { question: '<strong>sin²θ + cos²θ</strong> always equals?', choices: ['0', '1', '2', 'Depends on θ'], correctIndex: 1, explanation: '<strong>1</strong>' },
+                        { question: 'If cos(θ) = 0.6, what is sin²(θ)?', choices: ['0.36', '0.6', '0.64', '0.8'], correctIndex: 2, explanation: 'sin²θ = 1 − cos²θ = 1 − 0.36 = <strong>0.64</strong>' },
+                        { question: '1 + tan²θ = ?', choices: ['sec²θ', 'csc²θ', 'cos²θ', '2'], correctIndex: 0, explanation: '<strong>sec²θ</strong>' },
+                        { question: 'sin(2θ) = ?', choices: ['2sin²θ', '2cosθ', '2sinθcosθ', 'sin²θ − cos²θ'], correctIndex: 2, explanation: 'Double angle: sin(2θ) = <strong>2sinθcosθ</strong>' },
+                        { question: 'cos(2θ) = ?', choices: ['2cos²θ', 'cos²θ − sin²θ', '2sinθcosθ', 'sin²θ + cos²θ'], correctIndex: 1, explanation: 'Double angle: cos(2θ) = <strong>cos²θ − sin²θ</strong>' },
                     ]}
                 ]
             },
@@ -630,6 +733,10 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['inverse-trig-eval'] },
                     { type: 'practice', problems: [
                         { question: '<strong>arctan(1)</strong> = ?', choices: ['0°', '30°', '45°', '90°'], correctIndex: 2, explanation: 'tan(45°) = 1 → <strong>45°</strong>' },
+                        { question: '<strong>arcsin(1)</strong> = ?', choices: ['0°', '30°', '60°', '90°'], correctIndex: 3, explanation: 'sin(90°) = 1 → <strong>90°</strong>' },
+                        { question: '<strong>arccos(1)</strong> = ?', choices: ['0°', '45°', '90°', '180°'], correctIndex: 0, explanation: 'cos(0°) = 1 → <strong>0°</strong>' },
+                        { question: 'The range of arcsin is:', choices: ['[0°, 180°]', '[−90°, 90°]', '[0°, 360°]', '(−90°, 90°)'], correctIndex: 1, explanation: 'arcsin outputs angles in <strong>[−90°, 90°]</strong>.' },
+                        { question: '<strong>arctan(0)</strong> = ?', choices: ['90°', '45°', '0°', '180°'], correctIndex: 2, explanation: 'tan(0°) = 0 → <strong>0°</strong>' },
                     ]}
                 ]
             },
@@ -649,7 +756,9 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['law-of-sines-calc'] },
                     { type: 'practice', problems: [
                         { question: 'A = 30°, B = 90°, a = 5. Find b.', choices: ['5', '10', '5√2', '2.5'], correctIndex: 1, explanation: '5/sin(30°) = b/sin(90°) → b = <strong>10</strong>' },
-                        { question: 'Law of Sines relates sides to the ___ of opposite angles.', choices: ['cosines', 'tangents', 'sines', 'squares'], correctIndex: 2, explanation: '<strong>sines</strong>' }
+                        { question: 'Law of Sines relates sides to the ___ of opposite angles.', choices: ['cosines', 'tangents', 'sines', 'squares'], correctIndex: 2, explanation: '<strong>sines</strong>' },
+                        { question: 'When can you use the Law of Sines?', choices: ['Only SAS', 'Only SSS', 'AAS or ASA', 'Only right triangles'], correctIndex: 2, explanation: 'Law of Sines works for <strong>AAS or ASA</strong> (and SSA).' },
+                        { question: 'A = 45°, a = 7, B = 60°. Which ratio equals a/sin(A)?', choices: ['b/sin(A)', 'b/sin(B)', 'a/sin(B)', 'sin(B)/b'], correctIndex: 1, explanation: 'a/sin(A) = <strong>b/sin(B)</strong> by the Law of Sines.' },
                     ]}
                 ]
             },
@@ -669,7 +778,9 @@ export const lessonPaths = {
                     { type: 'generated_practice', generators: ['law-of-cosines-calc'] },
                     { type: 'practice', problems: [
                         { question: 'a = 3, b = 4, C = 90°. Find c.', choices: ['5', '7', '25', '12'], correctIndex: 0, explanation: '9 + 16 − 0 = 25 → c = <strong>5</strong>' },
-                        { question: 'When is Law of Cosines necessary?', choices: ['AAS', 'SAS', 'ASA', 'AAA'], correctIndex: 1, explanation: 'For <strong>SAS</strong>, only Law of Cosines works.' }
+                        { question: 'When is Law of Cosines necessary?', choices: ['AAS', 'SAS', 'ASA', 'AAA'], correctIndex: 1, explanation: 'For <strong>SAS</strong>, only Law of Cosines works.' },
+                        { question: 'The Law of Cosines reduces to the Pythagorean theorem when C = ?', choices: ['45°', '60°', '90°', '180°'], correctIndex: 2, explanation: 'cos(90°) = 0, so −2ab·cos(C) drops out → <strong>a² + b² = c²</strong>.' },
+                        { question: 'a = 5, b = 5, C = 60°. Find c.', choices: ['5', '4', '5√3', '10'], correctIndex: 0, explanation: 'c² = 25 + 25 − 2(25)(0.5) = 25 → c = <strong>5</strong>' },
                     ]}
                 ]
             }
