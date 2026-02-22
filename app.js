@@ -899,7 +899,7 @@ async function loadLeaderboard() {
                     <div class="user-name">${data.displayName || 'Anonymous'}</div>
                     <div class="user-stats">Level ${level} • ${data.xp || 0} XP</div>
                 </div>
-                <div class="user-badges">${(data.badges || []).length} 🏆</div>
+                <div class="user-badges">${data.weeklyXP || 0} XP</div>
             `;
             
             leaderboardList.appendChild(itemEl);
