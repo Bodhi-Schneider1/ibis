@@ -42,18 +42,36 @@ let lessonPracticeState = {
 // XP and Level System
 const XP_PER_LEVEL = 100;
 
+// XP needed to reach a given level from zero
+function xpForLevel(level) {
+    return Math.floor(100 * Math.pow(1.4, level - 1));
+}
+
+// Which level is the user currently on
 function calculateLevel(xp) {
-    return Math.floor(xp / XP_PER_LEVEL) + 1;
+    let level = 1;
+    let total = 0;
+    while (total + xpForLevel(level) <= xp) {
+        total += xpForLevel(level);
+        level++;
+    }
+    return level;
 }
 
-function getXPForNextLevel(currentXP) {
-    const currentLevel = calculateLevel(currentXP);
-    return currentLevel * XP_PER_LEVEL;
+// XP accumulated within the current level
+function getCurrentLevelXP(xp) {
+    let total = 0;
+    let level = 1;
+    while (total + xpForLevel(level) <= xp) {
+        total += xpForLevel(level);
+        level++;
+    }
+    return xp - total;
 }
 
-function getCurrentLevelXP(currentXP) {
-    const previousLevelXP = (calculateLevel(currentXP) - 1) * XP_PER_LEVEL;
-    return currentXP - previousLevelXP;
+// XP required to complete the current level
+function getXPForNextLevel(xp) {
+    return xpForLevel(calculateLevel(xp));
 }
 
 // Badge Definitions
