@@ -131,79 +131,146 @@
             <div id="practice-view" class="hidden">
                 <div class="welcome-section">
                     <h2>Practice Your Skills</h2>
-                    <p>Select a topic and difficulty level to begin</p>
+                    <p>Sharpen what you've learned with focused drills</p>
+                </div>
+
+                <!-- Daily Goal Bar -->
+                <div class="daily-goal-bar" id="daily-goal-bar">
+                    <div class="dg-left">
+                        <span class="dg-flame" id="dg-flame">🔥</span>
+                        <div class="dg-info">
+                            <strong>Today's Goal</strong>
+                            <span id="dg-label">0 / 10 problems</span>
+                        </div>
+                    </div>
+                    <div class="dg-progress-wrap">
+                        <div class="dg-progress-bar">
+                            <div class="dg-progress-fill" id="dg-progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Cards Row -->
+                <div class="practice-action-row">
+                    <!-- Quick Practice -->
+                    <button class="practice-action-card quick-action" onclick="startQuickPractice()" id="quick-practice-btn" disabled>
+                        <span class="pac-icon">⚡</span>
+                        <div class="pac-text">
+                            <strong>Quick Practice</strong>
+                            <span>10 mixed problems</span>
+                        </div>
+                        <span class="pac-arrow">→</span>
+                    </button>
+                    <!-- Retry Missed -->
+                    <button class="practice-action-card retry-action" onclick="startRetryMissed()" id="retry-missed-btn" disabled>
+                        <span class="pac-icon">🔄</span>
+                        <div class="pac-text">
+                            <strong>Retry Missed</strong>
+                            <span id="retry-missed-label">No missed problems</span>
+                        </div>
+                        <span class="pac-arrow">→</span>
+                    </button>
                 </div>
 
                 <!-- Math Topics -->
+                <h3 class="pv-heading">Choose a Topic</h3>
                 <div class="topics-grid">
-                    <div class="topic-card" onclick="selectTopic('algebra', event)">
-                        <div class="topic-icon">📐</div>
+                    <div class="topic-card" onclick="selectTopic('algebra', this)">
+                        <div class="topic-card-top">
+                            <div class="topic-icon">📐</div>
+                            <div class="mastery-ring" id="algebra-mastery-ring">
+                                <svg viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-bg"/>
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-fg" id="algebra-mastery-arc" stroke-dasharray="0 100"/>
+                                </svg>
+                                <span class="mastery-pct" id="algebra-mastery-pct">—</span>
+                            </div>
+                        </div>
                         <h3>Algebra</h3>
                         <p>Equations, expressions, and functions</p>
                         <div class="topic-stats">
-                            <span class="stat">🎯 <span id="algebra-practice-count">0</span> completed</span>
+                            <span class="stat">🎯 <span id="algebra-practice-count">0</span> correct</span>
+                            <span class="stat">📊 <span id="algebra-total-count">0</span> attempted</span>
                         </div>
                     </div>
 
-                    <div class="topic-card" onclick="selectTopic('geometry', event)">
-                        <div class="topic-icon">📏</div>
+                    <div class="topic-card" onclick="selectTopic('geometry', this)">
+                        <div class="topic-card-top">
+                            <div class="topic-icon">📏</div>
+                            <div class="mastery-ring" id="geometry-mastery-ring">
+                                <svg viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-bg"/>
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-fg" id="geometry-mastery-arc" stroke-dasharray="0 100"/>
+                                </svg>
+                                <span class="mastery-pct" id="geometry-mastery-pct">—</span>
+                            </div>
+                        </div>
                         <h3>Geometry</h3>
                         <p>Shapes, angles, and spatial reasoning</p>
                         <div class="topic-stats">
-                            <span class="stat">🎯 <span id="geometry-practice-count">0</span> completed</span>
+                            <span class="stat">🎯 <span id="geometry-practice-count">0</span> correct</span>
+                            <span class="stat">📊 <span id="geometry-total-count">0</span> attempted</span>
                         </div>
                     </div>
 
-                    <div class="topic-card" onclick="selectTopic('trigonometry', event)">
-                        <div class="topic-icon">📊</div>
+                    <div class="topic-card" onclick="selectTopic('trigonometry', this)">
+                        <div class="topic-card-top">
+                            <div class="topic-icon">📊</div>
+                            <div class="mastery-ring" id="trigonometry-mastery-ring">
+                                <svg viewBox="0 0 36 36">
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-bg"/>
+                                    <circle cx="18" cy="18" r="15.915" class="mastery-fg" id="trigonometry-mastery-arc" stroke-dasharray="0 100"/>
+                                </svg>
+                                <span class="mastery-pct" id="trigonometry-mastery-pct">—</span>
+                            </div>
+                        </div>
                         <h3>Trigonometry</h3>
                         <p>Sine, cosine, and triangle relationships</p>
                         <div class="topic-stats">
-                            <span class="stat">🎯 <span id="trigonometry-practice-count">0</span> completed</span>
+                            <span class="stat">🎯 <span id="trigonometry-practice-count">0</span> correct</span>
+                            <span class="stat">📊 <span id="trigonometry-total-count">0</span> attempted</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Practice Mode Selection -->
-                <div class="mode-section">
-                    <h3>Practice Mode</h3>
-                    <div class="mode-buttons">
-                        <button class="mode-button" onclick="setPracticeMode('regular', event)">
-                            <span class="mode-icon">📝</span>
-                            <span class="mode-label">Regular Practice</span>
-                            <span class="mode-desc">+10 XP per problem</span>
-                        </button>
-                        <button class="mode-button" onclick="setPracticeMode('timed', event)">
-                            <span class="mode-icon">⏱️</span>
-                            <span class="mode-label">Timed Challenge</span>
-                            <span class="mode-desc">+15 XP per problem</span>
-                        </button>
+                <!-- Subtopic Chips (appears after topic chosen) -->
+                <div class="subtopic-section hidden" id="subtopic-section">
+                    <h3 class="pv-heading">Focus Area <span class="optional-tag">optional — leave blank for all topics</span></h3>
+                    <div class="subtopic-chips" id="subtopic-chips"></div>
+                </div>
+
+                <!-- Practice Settings Row (appears after topic chosen) -->
+                <div class="practice-settings hidden" id="practice-settings">
+                    <div class="setting-group">
+                        <label class="setting-label">Mode</label>
+                        <div class="mode-buttons">
+                            <button class="mode-button active" onclick="setPracticeMode('regular', event)">
+                                <span class="mode-icon">📝</span>
+                                <span class="mode-label">Regular</span>
+                                <span class="mode-desc">+10 XP each</span>
+                            </button>
+                            <button class="mode-button" onclick="setPracticeMode('timed', event)">
+                                <span class="mode-icon">⏱️</span>
+                                <span class="mode-label">Timed</span>
+                                <span class="mode-desc">+15 XP each</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="setting-group">
+                        <label class="setting-label">Problems</label>
+                        <div class="count-buttons">
+                            <button class="count-btn" onclick="setProblemCount(5, event)">5</button>
+                            <button class="count-btn active" onclick="setProblemCount(10, event)">10</button>
+                            <button class="count-btn" onclick="setProblemCount(15, event)">15</button>
+                            <button class="count-btn" onclick="setProblemCount(20, event)">20</button>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Difficulty Selection -->
-                <div class="difficulty-section">
-                    <h3>Difficulty Level</h3>
-                    <div class="difficulty-buttons">
-                        <button class="difficulty-btn easy" onclick="setDifficulty('easy', event)">
-                            <span class="diff-icon">😊</span>
-                            Easy
-                        </button>
-                        <button class="difficulty-btn medium" onclick="setDifficulty('medium', event)">
-                            <span class="diff-icon">🤔</span>
-                            Medium
-                        </button>
-                        <button class="difficulty-btn hard" onclick="setDifficulty('hard', event)">
-                            <span class="diff-icon">🔥</span>
-                            Hard
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Start Button -->
-                <div class="start-section">
-                    <button class="start-button" onclick="startPractice()" id="start-btn" disabled>
-                        <span>Select a topic and difficulty to start</span>
+                <!-- Start Button (appears after topic chosen) -->
+                <div class="start-section hidden" id="start-section">
+                    <button class="start-button" onclick="startPractice()" id="start-btn">
+                        Start Practice
                     </button>
                 </div>
             </div>
@@ -347,6 +414,10 @@
                         </div>
                     </div>
                     <div class="session-header-right">
+                        <div class="session-streak hidden" id="session-streak">
+                            <span class="streak-fire">🔥</span>
+                            <span class="streak-count" id="streak-count">0</span>
+                        </div>
                         <div class="session-score-display">
                             Score: <strong id="session-score">0</strong> / <span id="session-total">5</span>
                         </div>
@@ -356,6 +427,8 @@
                         </div>
                     </div>
                 </div>
+                <!-- XP Float -->
+                <div class="xp-float hidden" id="xp-float">+10 XP</div>
 
                 <!-- Problem Area -->
                 <div class="problem-area" id="problem-area">
@@ -408,12 +481,20 @@
                         <span class="summary-stat-value" id="summary-xp">+0 XP</span>
                         <span class="summary-stat-label">Earned</span>
                     </div>
+                    <div class="summary-stat streak-stat hidden" id="summary-streak-stat">
+                        <span class="summary-stat-value" id="summary-best-streak">0</span>
+                        <span class="summary-stat-label">🔥 Best Streak</span>
+                    </div>
                 </div>
 
-                <!-- Per-problem breakdown -->
-                <div class="summary-breakdown" id="summary-breakdown"></div>
+                <!-- Per-problem review (expandable) -->
+                <div class="summary-review">
+                    <h3 class="review-heading" id="review-heading">Problem Review — tap to see explanations</h3>
+                    <div class="summary-breakdown" id="summary-breakdown"></div>
+                </div>
 
                 <div class="summary-actions">
+                    <button onclick="startRetryMissedFromSummary()" class="retry-summary-btn hidden" id="retry-summary-btn">🔄 Retry Missed Problems</button>
                     <button onclick="practiceAgain()">Practice Again</button>
                     <button onclick="backToDashboardFromSummary()" class="secondary-button">Back to Dashboard</button>
                 </div>
