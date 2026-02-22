@@ -1,6 +1,7 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { lessonPaths } from './lessons.js';
 import { generators } from './generators.js';
@@ -230,6 +231,7 @@ window.nextProblem = nextProblem;
 window.quitSession = quitSession;
 window.practiceAgain = practiceAgain;
 window.backToDashboardFromSummary = backToDashboardFromSummary;
+window.resetPassword = resetPassword;
 
 // Friendly Firebase error messages
 function getFriendlyError(errorCode) {
@@ -336,7 +338,24 @@ function logout() {
             console.error('Logout error:', error);
         });
 }
+async function resetPassword() {
+    const email = document.getElementById('login-email').value.trim();
+    const errorMessage = document.getElementById('error-message');
 
+    if (!email) {
+        errorMessage.textContent = 'Enter your email above, then click Forgot Password.';
+        return;
+    }
+
+    try {
+        await sendPasswordResetEmail(auth, email);
+        errorMessage.style.color = 'green';
+        errorMessage.textContent = 'Password reset email sent! Check your inbox.';
+    } catch (error) {
+        errorMessage.style.color = '';
+        errorMessage.textContent = getFriendlyError(error.code);
+    }
+}
 // Save Profile
 async function saveProfile() {
     const user = auth.currentUser;
