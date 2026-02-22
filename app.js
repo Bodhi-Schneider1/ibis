@@ -39,8 +39,6 @@ let lessonPracticeState = {
     answeredIndices: new Set()
 };
 
-// XP and Level System
-const XP_PER_LEVEL = 100;
 
 // XP needed to reach a given level from zero
 function xpForLevel(level) {
@@ -460,7 +458,7 @@ async function loadProfile(userId) {
 function updateXPDisplay(xp) {
     const level = calculateLevel(xp);
     const currentLevelXP = getCurrentLevelXP(xp);
-    const nextLevelXP = XP_PER_LEVEL;
+    const nextLevelXP = getXPForNextLevel(xp);
     const progress = (currentLevelXP / nextLevelXP) * 100;
     
     document.getElementById('user-level').textContent = level;
