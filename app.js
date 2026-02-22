@@ -282,6 +282,8 @@ async function signup() {
             profilePicture: '',
             createdAt: new Date().toISOString(),
             xp: 0,
+            weeklyXP: 0,
+            weekStart: getWeekStart(),
             completedLessons: [],
             badges: [],
             stats: {
@@ -360,20 +362,33 @@ async function saveProfile() {
         showToast('Error saving profile', 'error');
     }
 }
-
+function getWeekStart() {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    const monday = new Date(now.setDate(diff));
+    return monday.toISOString().split('T')[0];
+}
 // Award XP
 async function awardXP(userId, amount) {
     const userRef = doc(db, 'users', userId);
-    
-    await updateDoc(userRef, {
-        xp: increment(amount)
-    });
-    
-    await checkAndAwardBadges(userId);
-    
     const userSnap = await getDoc(userRef);
-    if (userSnap.exists()) {
-        updateXPDisplay(userSnap.data().xp);
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
+    const thisWeek = getWeekStart();
+    const isNewWeek = (userData.weekStart || '') !== thisWeek;
+
+    await updateDoc(userRef, {
+        xp: increment(amount),
+        weeklyXP: isNewWeek ? amount : increment(amount),
+        weekStart: thisWeek
+    });
+
+    await checkAndAwardBadges(userId);
+
+    const userSnap2 = await getDoc(userRef);
+    if (userSnap2.exists()) {
+        updateXPDisplay(userSnap2.data().xp);
     }
 }
 
@@ -857,7 +872,7 @@ async function loadLeaderboard() {
     leaderboardList.innerHTML = '<div class="loading-message">Loading leaderboard...</div>';
     
     try {
-        const q = query(collection(db, 'users'), orderBy('xp', 'desc'), limit(10));
+        const q = query(collection(db, 'users'), orderBy('weeklyXP', 'desc'), limit(10));
         const querySnapshot = await getDocs(q);
         
         leaderboardList.innerHTML = '';
