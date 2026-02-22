@@ -1,6 +1,5 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { lessonPaths } from './lessons.js';
@@ -22,13 +21,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-
-// Practice session state
-let practiceState = {
-    topic: null,
-    difficulty: null,
-    mode: null
-};
 
 // Current path and lesson state
 let currentPath = null;
@@ -231,6 +223,11 @@ window.nextProblem = nextProblem;
 window.quitSession = quitSession;
 window.practiceAgain = practiceAgain;
 window.backToDashboardFromSummary = backToDashboardFromSummary;
+window.startQuickPractice = startQuickPractice;
+window.startRetryMissed = startRetryMissed;
+window.startRetryMissedFromSummary = startRetryMissedFromSummary;
+window.toggleSubtopic = toggleSubtopic;
+window.setProblemCount = setProblemCount;
 window.resetPassword = resetPassword;
 
 // Friendly Firebase error messages
@@ -972,90 +969,55 @@ function showPracticeView() {
     document.getElementById('practice-view').classList.remove('hidden');
     document.getElementById('learn-toggle').classList.remove('active');
     document.getElementById('practice-toggle').classList.add('active');
-}
-
-// Select Topic
-function selectTopic(topic, event) {
-    practiceState.topic = topic;
-    
-    document.querySelectorAll('.topic-card').forEach(card => {
-        card.classList.remove('active');
-    });
-    
-    event.currentTarget.classList.add('active');
-    updateStartButton();
-}
-
-// Set Difficulty
-function setDifficulty(difficulty, event) {
-    practiceState.difficulty = difficulty;
-    
-    document.querySelectorAll('.difficulty-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    event.currentTarget.classList.add('active');
-    updateStartButton();
-}
-
-// Set Practice Mode
-function setPracticeMode(mode, event) {
-    practiceState.mode = mode;
-    
-    document.querySelectorAll('.mode-button').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    event.currentTarget.classList.add('active');
-    updateStartButton();
-}
-
-// Update Start Button
-function updateStartButton() {
-    const startBtn = document.getElementById('start-btn');
-    const { topic, difficulty, mode } = practiceState;
-    
-    if (topic && difficulty && mode) {
-        startBtn.disabled = false;
-        const topicName = topic.charAt(0).toUpperCase() + topic.slice(1);
-        const modeName = mode === 'timed' ? 'Timed Challenge' : 'Practice';
-        startBtn.innerHTML = `Start ${topicName} - ${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)} (${modeName})`;
-    } else {
-        startBtn.disabled = true;
-        const missing = [];
-        if (!topic) missing.push('topic');
-        if (!difficulty) missing.push('difficulty');
-        if (!mode) missing.push('mode');
-        startBtn.innerHTML = `Select ${missing.join(', ')} to start`;
-    }
+    updateQuickPracticeBtn();
+    updateRetryMissedBtn();
+    updateMasteryRings();
+    updateDailyGoal();
 }
 
 // ============================================================
-// PRACTICE ENGINE
+// PRACTICE ENGINE — powered by generators.js
 // ============================================================
 
-const PROBLEMS_PER_SESSION = 5;
 const TIMER_DURATIONS = { easy: 30, medium: 45, hard: 60 };
+const DAILY_GOAL = 10;
+
+// Practice setup state (smart defaults so user only needs to pick a topic)
+let practiceState = {
+    topic: null,
+    subtopics: [],       // selected lesson IDs (empty = all)
+    difficulty: 'medium',
+    mode: 'regular',
+    problemCount: 10
+};
 
 // Session state
 let sessionState = {
     problems: [],
     currentIndex: 0,
     score: 0,
-    answers: [], // { correct: bool, timeout: bool }
+    answers: [],
     topic: null,
     difficulty: null,
     mode: null,
     timerInterval: null,
     timeLeft: 0,
-    answered: false
+    answered: false,
+    streak: 0,
+    bestStreak: 0,
+    problemCount: 10
 };
 
-// --- Utility helpers ---
+// Missed questions queue (persists across sessions in memory)
+let missedQueue = [];
+
+// Daily progress (resets each day)
+let dailyProgress = { date: new Date().toDateString(), solved: 0 };
+
+// --- Utility helpers (shared with lesson practice) ---
 function randInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
-
 function shuffle(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -1064,60 +1026,737 @@ function shuffle(arr) {
     }
     return a;
 }
-
 function pickRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function roundNice(n, decimals = 2) {
-    return parseFloat(n.toFixed(decimals));
+// Build subtopic map: topic → [ { id, title, gens: [...] } ]
+function getSubtopicMap() {
+    const map = {};
+    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+        map[topic] = lessonPaths[topic].lessons.map(lesson => {
+            const gens = [];
+            lesson.sections.forEach(s => {
+                if (s.type === 'generated_practice') gens.push(...s.generators);
+            });
+            return { id: lesson.id, title: lesson.title, gens: [...new Set(gens)] };
+        });
+    });
+    return map;
 }
 
+// ============================================================
+// DAILY GOAL
+// ============================================================
+function updateDailyGoal() {
+    const today = new Date().toDateString();
+    if (dailyProgress.date !== today) {
+        dailyProgress = { date: today, solved: 0 };
+    }
+    const pct = Math.min(100, Math.round((dailyProgress.solved / DAILY_GOAL) * 100));
+    const fill = document.getElementById('dg-progress-fill');
+    const label = document.getElementById('dg-label');
+    const flame = document.getElementById('dg-flame');
+    if (fill) fill.style.width = pct + '%';
+    if (label) label.textContent = `${dailyProgress.solved} / ${DAILY_GOAL} problems`;
+    if (flame) {
+        flame.classList.toggle('done', dailyProgress.solved >= DAILY_GOAL);
+        flame.textContent = dailyProgress.solved >= DAILY_GOAL ? '✅' : '🔥';
+    }
+}
+
+function incrementDailyGoal(count) {
+    const today = new Date().toDateString();
+    if (dailyProgress.date !== today) dailyProgress = { date: today, solved: 0 };
+    dailyProgress.solved += count;
+    updateDailyGoal();
+}
+
+// ============================================================
+// MASTERY RINGS
+// ============================================================
+async function updateMasteryRings() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+    const stats = userSnap.data().stats || {};
+
+    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+        const correct = stats[topic] || 0;
+        const total = stats[`${topic}Total`] || 0;
+        const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
+
+        // Update counts
+        const countEl = document.getElementById(`${topic}-practice-count`);
+        const totalEl = document.getElementById(`${topic}-total-count`);
+        if (countEl) countEl.textContent = correct;
+        if (totalEl) totalEl.textContent = total;
+
+        // Update ring
+        const arcEl = document.getElementById(`${topic}-mastery-arc`);
+        const pctEl = document.getElementById(`${topic}-mastery-pct`);
+        const ringEl = document.getElementById(`${topic}-mastery-ring`);
+
+        if (arcEl) arcEl.setAttribute('stroke-dasharray', `${pct} ${100 - pct}`);
+        if (pctEl) pctEl.textContent = total > 0 ? `${pct}%` : '—';
+        if (ringEl) {
+            ringEl.classList.remove('low', 'mid', 'high', 'perfect');
+            if (total > 0) {
+                if (pct >= 90) ringEl.classList.add('perfect');
+                else if (pct >= 70) ringEl.classList.add('high');
+                else if (pct >= 50) ringEl.classList.add('mid');
+                else ringEl.classList.add('low');
+            }
+        }
+    });
+}
+
+// ============================================================
+// MISSED QUESTIONS QUEUE
+// ============================================================
+function addToMissedQueue(problem) {
+    // Avoid duplicates (check question text)
+    if (!missedQueue.find(p => p.question === problem.question)) {
+        missedQueue.push({ ...problem });
+        if (missedQueue.length > 50) missedQueue.shift(); // cap at 50
+    }
+}
+
+function updateRetryMissedBtn() {
+    const btn = document.getElementById('retry-missed-btn');
+    const label = document.getElementById('retry-missed-label');
+    if (!btn) return;
+    const count = missedQueue.length;
+    btn.disabled = count === 0;
+    if (label) label.textContent = count > 0 ? `${count} problem${count > 1 ? 's' : ''} to review` : 'No missed problems';
+}
+
+function startRetryMissed() {
+    if (missedQueue.length === 0) return;
+    const problems = shuffle([...missedQueue]).slice(0, 10);
+    practiceState.topic = 'mixed';
+    practiceState.difficulty = 'medium';
+    launchSession(problems, 'Retry Missed', 'Review', 'regular', problems.length);
+}
+
+function startRetryMissedFromSummary() {
+    // Gather missed from the just-completed session
+    const missed = [];
+    sessionState.answers.forEach((a, i) => {
+        if (!a.correct) missed.push(sessionState.problems[i]);
+    });
+    if (missed.length === 0) return;
+    practiceState.topic = sessionState.topic || 'mixed';
+    practiceState.difficulty = 'medium';
+    launchSession(missed, 'Retry Missed', 'Review', 'regular', missed.length);
+}
+
+// --- SETUP UI ---
+
+function selectTopic(topic, el) {
+    practiceState.topic = topic;
+    practiceState.subtopics = [];
+    document.querySelectorAll('.topic-card').forEach(c => c.classList.remove('active'));
+    // el is the clicked .topic-card element (passed as 'this' from inline onclick)
+    const card = el.closest ? el.closest('.topic-card') || el : el;
+    card.classList.add('active');
+
+    // Show subtopic chips, settings, and start button
+    showSubtopicChips(topic);
+    document.getElementById('practice-settings').classList.remove('hidden');
+    document.getElementById('start-section').classList.remove('hidden');
+    updateStartButton();
+}
+
+async function showSubtopicChips(topic) {
+    const section = document.getElementById('subtopic-section');
+    const chipsEl = document.getElementById('subtopic-chips');
+    const subtopicMap = getSubtopicMap();
+    const subtopics = subtopicMap[topic] || [];
+
+    // Check which lessons are completed/unlocked
+    let completedLessons = [];
+    const user = auth.currentUser;
+    if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+    }
+
+    chipsEl.innerHTML = subtopics.map((st, i) => {
+        const isUnlocked = i === 0 || completedLessons.includes(`${topic}-${subtopics[i-1].id}`);
+        const hasGens = st.gens.length > 0;
+        const locked = !isUnlocked || !hasGens;
+        return `<button class="subtopic-chip ${locked ? 'locked' : ''}"
+            data-lesson-id="${st.id}"
+            ${locked ? 'disabled' : `onclick="toggleSubtopic('${st.id}', this)"`}>
+            ${st.title}${locked ? '<span class="chip-lock">🔒</span>' : ''}
+        </button>`;
+    }).join('');
+
+    section.classList.remove('hidden');
+}
+
+function toggleSubtopic(lessonId, btn) {
+    btn.classList.toggle('active');
+    const idx = practiceState.subtopics.indexOf(lessonId);
+    if (idx >= 0) practiceState.subtopics.splice(idx, 1);
+    else practiceState.subtopics.push(lessonId);
+    updateStartButton();
+}
+
+function setDifficulty(difficulty, event) {
+    practiceState.difficulty = difficulty;
+    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+}
+
+function setPracticeMode(mode, event) {
+    practiceState.mode = mode;
+    document.querySelectorAll('.mode-button').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+}
+
+function setProblemCount(count, event) {
+    practiceState.problemCount = count;
+    document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+}
+
+function updateStartButton() {
+    const btn = document.getElementById('start-btn');
+    const { topic, subtopics } = practiceState;
+    if (!topic) return;
+    const name = topic.charAt(0).toUpperCase() + topic.slice(1);
+    const focus = subtopics.length > 0
+        ? ` — ${subtopics.length} subtopic${subtopics.length > 1 ? 's' : ''}`
+        : ' — All Topics';
+    btn.textContent = `Start ${name}${focus} Practice`;
+}
+
+// Quick Practice button
+async function updateQuickPracticeBtn() {
+    const btn = document.getElementById('quick-practice-btn');
+    const user = auth.currentUser;
+    if (!user) { btn.disabled = true; return; }
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    const completed = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+    btn.disabled = completed.length === 0;
+    const label = btn.querySelector('.pac-text span');
+    if (completed.length > 0 && label) {
+        label.textContent = `10 mixed from ${completed.length} lesson${completed.length > 1 ? 's' : ''}`;
+    }
+}
+
+// Start Quick Practice — mix from all completed lessons
+async function startQuickPractice() {
+    const user = auth.currentUser;
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    const completed = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+    if (completed.length === 0) return;
+
+    // Gather all generators from completed lessons
+    const allGenIds = [];
+    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+        lessonPaths[topic].lessons.forEach(lesson => {
+            if (completed.includes(`${topic}-${lesson.id}`)) {
+                lesson.sections.forEach(s => {
+                    if (s.type === 'generated_practice') {
+                        s.generators.forEach(gId => {
+                            if (generators[gId]) allGenIds.push(gId);
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    if (allGenIds.length === 0) {
+        showToast('Complete some lessons first!', 'error');
+        return;
+    }
+
+    // Generate 10 random problems
+    const problems = [];
+    const shuffled = shuffle([...allGenIds]);
+    for (let i = 0; i < 10; i++) {
+        const gId = shuffled[i % shuffled.length];
+        const p = generators[gId]();
+        problems.push({
+            question: p.question,
+            correctAnswer: p.choices[p.correctIndex],
+            wrongAnswers: p.choices.filter((_, j) => j !== p.correctIndex),
+            explanation: p.explanation
+        });
+    }
+
+    practiceState.topic = 'mixed';
+    practiceState.difficulty = 'medium';
+    launchSession(problems, 'Mixed Review', 'Medium', 'regular', 10);
+}
+
+// --- PROBLEM GENERATION (using generators.js) ---
+
+function convertGenProblem(gp) {
+    return {
+        question: gp.question,
+        correctAnswer: gp.choices[gp.correctIndex],
+        wrongAnswers: gp.choices.filter((_, i) => i !== gp.correctIndex),
+        explanation: gp.explanation
+    };
+}
+
+function generateProblemsFromGenerators(topic, count) {
+    const subtopicMap = getSubtopicMap();
+    let available = subtopicMap[topic] || [];
+
+    // Filter to selected subtopics if any
+    if (practiceState.subtopics.length > 0) {
+        available = available.filter(st => practiceState.subtopics.includes(st.id));
+    }
+
+    // Collect all valid generator IDs
+    let allGenIds = [];
+    available.forEach(st => {
+        st.gens.forEach(gId => { if (generators[gId]) allGenIds.push(gId); });
+    });
+
+    if (allGenIds.length === 0) return [];
+
+    const problems = [];
+    const shuffledGens = shuffle([...allGenIds]);
+
+    for (let i = 0; i < count; i++) {
+        const gId = shuffledGens[i % shuffledGens.length];
+        let prob = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+                prob = generators[gId]();
+                if (prob && prob.choices && prob.correctIndex >= 0) break;
+                prob = null;
+            } catch(e) { prob = null; }
+        }
+        if (prob) {
+            problems.push(convertGenProblem(prob));
+        } else {
+            // Fallback to any random working generator
+            const fb = pickRandom(allGenIds);
+            problems.push(convertGenProblem(generators[fb]()));
+        }
+    }
+    return problems;
+}
+
+// Legacy inline generators as fallback (already in app.js below)
+function generateProblemsLegacy(topic, difficulty, count) {
+    if (!problemGenerators || !problemGenerators[topic] || !problemGenerators[topic][difficulty]) return [];
+    const gens = problemGenerators[topic][difficulty];
+    const problems = [];
+    for (let i = 0; i < count; i++) {
+        const gen = gens[i % gens.length];
+        let problem = gen();
+        let attempts = 0;
+        while ((!problem || !problem.correctAnswer) && attempts < 5) {
+            problem = pickRandom(gens)();
+            attempts++;
+        }
+        if (problem) problems.push(problem);
+    }
+    return problems;
+}
+
+// --- SESSION MANAGEMENT ---
+
+function startPractice() {
+    const { topic, mode, problemCount } = practiceState;
+    if (!topic) {
+        showToast('Please select a topic first!', 'error');
+        return;
+    }
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Use generators.js, fallback to legacy medium
+    let problems = generateProblemsFromGenerators(topic, problemCount);
+    if (problems.length === 0) {
+        problems = generateProblemsLegacy(topic, 'medium', problemCount);
+    }
+    if (problems.length === 0) {
+        showToast('No problems available for this selection.', 'error');
+        return;
+    }
+
+    const topicLabel = topic.charAt(0).toUpperCase() + topic.slice(1);
+    launchSession(problems, topicLabel, '', mode, problems.length);
+}
+
+function launchSession(problems, topicLabel, diffLabel, mode, total) {
+    sessionState = {
+        problems,
+        currentIndex: 0,
+        score: 0,
+        answers: [],
+        topic: practiceState.topic || 'mixed',
+        difficulty: practiceState.difficulty || 'medium',
+        mode,
+        timerInterval: null,
+        timeLeft: 0,
+        answered: false,
+        streak: 0,
+        bestStreak: 0,
+        problemCount: total
+    };
+
+    // Setup header
+    document.getElementById('session-topic').textContent = topicLabel;
+    const diffBadge = document.getElementById('session-difficulty');
+    if (diffLabel) {
+        diffBadge.textContent = diffLabel;
+        diffBadge.className = 'session-badge session-diff-badge';
+        diffBadge.classList.remove('hidden');
+    } else {
+        diffBadge.classList.add('hidden');
+    }
+    document.getElementById('session-total').textContent = total;
+    document.getElementById('session-score').textContent = '0';
+    document.getElementById('session-streak').classList.add('hidden');
+
+    // Timer visibility
+    const timerEl = document.getElementById('session-timer');
+    if (mode === 'timed') timerEl.classList.remove('hidden');
+    else timerEl.classList.add('hidden');
+
+    hideAllViews();
+    document.getElementById('practice-session').classList.remove('hidden');
+    showProblem(0);
+}
+
+function showProblem(index) {
+    const problem = sessionState.problems[index];
+    const total = sessionState.problemCount;
+    sessionState.answered = false;
+
+    // Progress
+    document.getElementById('session-progress-text').textContent = `Problem ${index + 1} of ${total}`;
+    document.getElementById('session-progress-fill').style.width = ((index) / total * 100) + '%';
+
+    // Question
+    document.getElementById('problem-question').innerHTML = problem.question;
+
+    // Shuffled choices
+    const allChoices = [
+        { text: problem.correctAnswer, correct: true },
+        ...problem.wrongAnswers.map(w => ({ text: w, correct: false }))
+    ];
+    const shuffled = shuffle(allChoices);
+    const labels = ['A', 'B', 'C', 'D'];
+    document.getElementById('problem-choices').innerHTML = shuffled.map((ch, i) => `
+        <button class="choice-btn" data-correct="${ch.correct}" data-index="${i}" onclick="selectChoice(this)">
+            <span class="choice-label">${labels[i]}</span>${ch.text}
+        </button>
+    `).join('');
+
+    // Hide feedback & next
+    document.getElementById('feedback-area').classList.add('hidden');
+    document.getElementById('next-problem-btn').classList.add('hidden');
+    document.getElementById('xp-float').classList.add('hidden');
+
+    if (sessionState.mode === 'timed') startTimer();
+}
+
+function selectChoice(btn) {
+    if (sessionState.answered) return;
+    sessionState.answered = true;
+
+    if (sessionState.timerInterval) {
+        clearInterval(sessionState.timerInterval);
+        sessionState.timerInterval = null;
+    }
+
+    const isCorrect = btn.dataset.correct === 'true';
+
+    // Highlight correct/incorrect
+    document.querySelectorAll('.choice-btn').forEach(b => {
+        b.classList.add('disabled');
+        if (b.dataset.correct === 'true') b.classList.add('correct');
+    });
+
+    if (isCorrect) {
+        btn.classList.add('correct');
+        sessionState.score++;
+        sessionState.streak++;
+        if (sessionState.streak > sessionState.bestStreak) sessionState.bestStreak = sessionState.streak;
+        sessionState.answers.push({ correct: true, timeout: false });
+
+        // XP float animation
+        const xp = sessionState.mode === 'timed' ? 15 : 10;
+        const floatEl = document.getElementById('xp-float');
+        floatEl.textContent = `+${xp} XP`;
+        floatEl.className = 'xp-float animate';
+        setTimeout(() => floatEl.classList.add('hidden'), 1200);
+
+        // Remove from missed queue if present
+        const q = sessionState.problems[sessionState.currentIndex].question;
+        missedQueue = missedQueue.filter(p => p.question !== q);
+    } else {
+        btn.classList.add('incorrect');
+        sessionState.streak = 0;
+        sessionState.answers.push({ correct: false, timeout: false });
+
+        // Add to missed queue
+        addToMissedQueue(sessionState.problems[sessionState.currentIndex]);
+    }
+
+    updateStreakDisplay();
+    document.getElementById('session-score').textContent = sessionState.score;
+    showFeedback(isCorrect, false);
+    document.getElementById('next-problem-btn').classList.remove('hidden');
+}
+
+function updateStreakDisplay() {
+    const el = document.getElementById('session-streak');
+    const cnt = document.getElementById('streak-count');
+    if (sessionState.streak >= 2) {
+        el.classList.remove('hidden');
+        cnt.textContent = sessionState.streak;
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = '';
+    } else {
+        el.classList.add('hidden');
+    }
+}
+
+function showFeedback(isCorrect, isTimeout) {
+    const feedbackArea = document.getElementById('feedback-area');
+    const banner = document.getElementById('feedback-banner');
+    const icon = document.getElementById('feedback-icon');
+    const text = document.getElementById('feedback-text');
+    const explanation = document.getElementById('feedback-explanation');
+
+    feedbackArea.classList.remove('hidden');
+    banner.className = 'feedback-banner';
+
+    if (isTimeout) {
+        banner.classList.add('timeout');
+        icon.textContent = '⏱️';
+        text.textContent = "Time's up!";
+    } else if (isCorrect) {
+        banner.classList.add('correct');
+        icon.textContent = '✅';
+        const msgs = ['Correct!', 'Great job!', 'Nailed it!', 'Perfect!', 'Well done!'];
+        if (sessionState.streak >= 3) msgs.push(`🔥 ${sessionState.streak} in a row!`);
+        text.textContent = pickRandom(msgs);
+    } else {
+        banner.classList.add('incorrect');
+        icon.textContent = '❌';
+        text.textContent = pickRandom(["Not quite.", "That's not right.", "Incorrect.", "Almost!"]);
+    }
+
+    const problem = sessionState.problems[sessionState.currentIndex];
+    explanation.innerHTML = `<strong>Explanation:</strong><br>${problem.explanation}`;
+}
+
+function nextProblem() {
+    sessionState.currentIndex++;
+    if (sessionState.currentIndex >= sessionState.problemCount) {
+        endSession();
+    } else {
+        showProblem(sessionState.currentIndex);
+    }
+}
+
+// --- TIMER ---
+function startTimer() {
+    const duration = TIMER_DURATIONS[sessionState.difficulty] || 30;
+    sessionState.timeLeft = duration;
+    const timerEl = document.getElementById('session-timer');
+    const timerVal = document.getElementById('timer-value');
+    timerVal.textContent = duration;
+    timerEl.className = 'session-timer';
+
+    if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
+    sessionState.timerInterval = setInterval(() => {
+        sessionState.timeLeft--;
+        timerVal.textContent = sessionState.timeLeft;
+        if (sessionState.timeLeft <= 10) timerEl.className = 'session-timer danger';
+        else if (sessionState.timeLeft <= 15) timerEl.className = 'session-timer warning';
+        if (sessionState.timeLeft <= 0) {
+            clearInterval(sessionState.timerInterval);
+            sessionState.timerInterval = null;
+            handleTimeout();
+        }
+    }, 1000);
+}
+
+function handleTimeout() {
+    if (sessionState.answered) return;
+    sessionState.answered = true;
+    sessionState.streak = 0;
+    updateStreakDisplay();
+    sessionState.answers.push({ correct: false, timeout: true });
+    // Add to missed queue
+    addToMissedQueue(sessionState.problems[sessionState.currentIndex]);
+    document.querySelectorAll('.choice-btn').forEach(b => {
+        b.classList.add('disabled');
+        if (b.dataset.correct === 'true') b.classList.add('correct');
+    });
+    showFeedback(false, true);
+    document.getElementById('next-problem-btn').classList.remove('hidden');
+}
+
+// --- SESSION END ---
+async function endSession() {
+    if (sessionState.timerInterval) {
+        clearInterval(sessionState.timerInterval);
+        sessionState.timerInterval = null;
+    }
+
+    const { score, answers, topic, mode, bestStreak, problemCount } = sessionState;
+    const total = problemCount;
+    const accuracy = Math.round((score / total) * 100);
+    const xpPerProblem = mode === 'timed' ? 15 : 10;
+    const xpEarned = score * xpPerProblem;
+
+    // Update daily goal
+    incrementDailyGoal(total);
+
+    // Update Firebase
+    const user = auth.currentUser;
+    if (user) {
+        if (xpEarned > 0) await awardXP(user.uid, xpEarned);
+        const userRef = doc(db, 'users', user.uid);
+        const updateData = {
+            [`stats.totalProblems`]: increment(score),
+            [`stats.${topic}`]: increment(score),
+            [`stats.${topic}Total`]: increment(total),
+            [`stats.totalAttempted`]: increment(total)
+        };
+        if (mode === 'timed') updateData['stats.timedChallenges'] = increment(1);
+        await updateDoc(userRef, updateData);
+        await loadProfile(user.uid);
+    }
+
+    // Show summary
+    hideAllViews();
+    document.getElementById('session-summary').classList.remove('hidden');
+
+    let summaryIcon, summaryTitle, summarySubtitle;
+    if (accuracy === 100) {
+        summaryIcon = '🏆'; summaryTitle = 'Perfect Score!'; summarySubtitle = "Incredible — you didn't miss a single one!";
+    } else if (accuracy >= 80) {
+        summaryIcon = '🎉'; summaryTitle = 'Great Job!'; summarySubtitle = "You're mastering this material!";
+    } else if (accuracy >= 60) {
+        summaryIcon = '👍'; summaryTitle = 'Good Effort!'; summarySubtitle = 'Keep practicing to improve!';
+    } else if (accuracy >= 40) {
+        summaryIcon = '💪'; summaryTitle = 'Keep Going!'; summarySubtitle = "Review the explanations and try again.";
+    } else {
+        summaryIcon = '📚'; summaryTitle = 'Time to Study!'; summarySubtitle = "Check out the Learn section for help.";
+    }
+
+    document.getElementById('summary-icon').textContent = summaryIcon;
+    document.getElementById('summary-title').textContent = summaryTitle;
+    document.getElementById('summary-subtitle').textContent = summarySubtitle;
+    document.getElementById('summary-correct').textContent = score;
+    document.getElementById('summary-total-problems').textContent = total;
+    document.getElementById('summary-accuracy').textContent = accuracy + '%';
+    document.getElementById('summary-xp').textContent = `+${xpEarned} XP`;
+
+    // Best streak
+    const streakStat = document.getElementById('summary-streak-stat');
+    if (bestStreak >= 2) {
+        document.getElementById('summary-best-streak').textContent = bestStreak;
+        streakStat.classList.remove('hidden');
+    } else {
+        streakStat.classList.add('hidden');
+    }
+
+    // Show/hide retry missed button
+    const incorrect = answers.filter(a => !a.correct).length;
+    const retryBtn = document.getElementById('retry-summary-btn');
+    if (retryBtn) {
+        if (incorrect > 0) {
+            retryBtn.classList.remove('hidden');
+            retryBtn.textContent = `🔄 Retry ${incorrect} Missed Problem${incorrect > 1 ? 's' : ''}`;
+        } else {
+            retryBtn.classList.add('hidden');
+        }
+    }
+
+    // Review heading
+    document.getElementById('review-heading').textContent = incorrect > 0
+        ? 'Problem Review — tap to see explanations'
+        : 'Problem Review — all correct!';
+
+    // Expandable breakdown
+    const breakdownEl = document.getElementById('summary-breakdown');
+    breakdownEl.innerHTML = answers.map((a, i) => {
+        const p = sessionState.problems[i];
+        const cls = a.timeout ? 'timeout-item' : a.correct ? 'correct-item' : 'incorrect-item';
+        const icon = a.timeout ? '⏱️' : a.correct ? '✅' : '❌';
+        const shortQ = p.question.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+        const qDisplay = shortQ.length > 80 ? shortQ.substring(0, 80) + '…' : shortQ;
+        return `<div class="breakdown-item ${cls}" onclick="this.classList.toggle('open')">
+            <span class="breakdown-icon">${icon}</span>
+            <div class="breakdown-content">
+                <div class="breakdown-q">${i + 1}. ${qDisplay}</div>
+                <span class="breakdown-toggle">${a.correct ? 'show explanation' : 'show answer & explanation'}</span>
+                <div class="breakdown-explain">${!a.correct ? `<strong>Correct answer:</strong> ${p.correctAnswer}<br><br>` : ''}${p.explanation}</div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function quitSession() {
+    if (sessionState.timerInterval) {
+        clearInterval(sessionState.timerInterval);
+        sessionState.timerInterval = null;
+    }
+    hideAllViews();
+    document.getElementById('main-view').classList.remove('hidden');
+    showPracticeView();
+}
+
+function practiceAgain() {
+    hideAllViews();
+    document.getElementById('main-view').classList.remove('hidden');
+    showPracticeView();
+}
+
+// ============================================================
+// LEGACY INLINE GENERATORS (fallback when generators.js has no match)
+// ============================================================
+
+function roundNice(n, decimals = 2) { return parseFloat(n.toFixed(decimals)); }
 function generateDistractors(correct, count = 3, isDecimal = false) {
     const distractors = new Set();
     const step = isDecimal ? 0.5 : 1;
-
     const candidates = [
-        correct + step, correct - step,
-        correct + step * 2, correct - step * 2,
-        correct + step * 3, correct - step * 3,
-        correct * 2, correct + 10,
-        Math.abs(correct - 10),
-        -correct
+        correct + step, correct - step, correct + step * 2, correct - step * 2,
+        correct + step * 3, correct - step * 3, correct * 2, correct + 10,
+        Math.abs(correct - 10), -correct
     ].map(v => isDecimal ? roundNice(v) : Math.round(v));
-
     for (const c of shuffle(candidates)) {
-        if (c !== correct && !distractors.has(c) && (c > 0 || correct <= 0)) {
-            distractors.add(c);
-        }
+        if (c !== correct && !distractors.has(c) && (c > 0 || correct <= 0)) distractors.add(c);
         if (distractors.size >= count) break;
     }
-
     while (distractors.size < count) {
         const offset = randInt(1, 8) * (Math.random() < 0.5 ? 1 : -1);
         const val = isDecimal ? roundNice(correct + offset * 0.5) : correct + offset;
-        if (val !== correct && !distractors.has(val)) {
-            distractors.add(val);
-        }
+        if (val !== correct && !distractors.has(val)) distractors.add(val);
     }
-
     return [...distractors].slice(0, count);
 }
-
-function formatAnswer(val) {
-    if (Number.isInteger(val)) return String(val);
-    return String(roundNice(val));
-}
-
+function formatAnswer(val) { return Number.isInteger(val) ? String(val) : String(roundNice(val)); }
 function buildProblem(question, correctVal, explanation, isDecimal = false) {
     const correct = isDecimal ? roundNice(correctVal) : Math.round(correctVal);
     const wrongs = generateDistractors(correct, 3, isDecimal);
-    return {
-        question,
-        correctAnswer: formatAnswer(correct),
-        wrongAnswers: wrongs.map(formatAnswer),
-        explanation
-    };
+    return { question, correctAnswer: formatAnswer(correct), wrongAnswers: wrongs.map(formatAnswer), explanation };
 }
 
 // --- PROBLEM GENERATORS ---
@@ -1583,331 +2222,6 @@ const problemGenerators = {
     }
 };
 
-// Generate a set of problems for a session
-function generateProblems(topic, difficulty, count) {
-    const generators = problemGenerators[topic][difficulty];
-    const problems = [];
-    for (let i = 0; i < count; i++) {
-        const gen = generators[i % generators.length];
-        let problem = gen();
-        // Safety: ensure we got a valid problem
-        let attempts = 0;
-        while ((!problem || !problem.correctAnswer) && attempts < 5) {
-            problem = pickRandom(generators)();
-            attempts++;
-        }
-        problems.push(problem);
-    }
-    return problems;
-}
-
-// --- SESSION MANAGEMENT ---
-
-function startPractice() {
-    const { topic, difficulty, mode } = practiceState;
-
-    if (!topic || !difficulty || !mode) {
-        showToast('Please select a topic, difficulty, and mode first!', 'error');
-        return;
-    }
-
-    const user = auth.currentUser;
-    if (!user) return;
-
-    // Generate problems
-    const problems = generateProblems(topic, difficulty, PROBLEMS_PER_SESSION);
-
-    sessionState = {
-        problems,
-        currentIndex: 0,
-        score: 0,
-        answers: [],
-        topic,
-        difficulty,
-        mode,
-        timerInterval: null,
-        timeLeft: 0,
-        answered: false
-    };
-
-    // Setup UI
-    const topicLabel = topic.charAt(0).toUpperCase() + topic.slice(1);
-    const diffLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
-    document.getElementById('session-topic').textContent = topicLabel;
-    const diffBadge = document.getElementById('session-difficulty');
-    diffBadge.textContent = diffLabel;
-    diffBadge.className = 'session-badge session-diff-badge ' + difficulty;
-
-    document.getElementById('session-total').textContent = PROBLEMS_PER_SESSION;
-    document.getElementById('session-score').textContent = '0';
-
-    // Show/hide timer
-    const timerEl = document.getElementById('session-timer');
-    if (mode === 'timed') {
-        timerEl.classList.remove('hidden');
-    } else {
-        timerEl.classList.add('hidden');
-    }
-
-    // Switch views
-    hideAllViews();
-    document.getElementById('practice-session').classList.remove('hidden');
-
-    // Show first problem
-    showProblem(0);
-}
-
-function showProblem(index) {
-    const problem = sessionState.problems[index];
-    sessionState.answered = false;
-
-    // Update progress
-    document.getElementById('session-progress-text').textContent = `Problem ${index + 1} of ${PROBLEMS_PER_SESSION}`;
-    document.getElementById('session-progress-fill').style.width = ((index) / PROBLEMS_PER_SESSION * 100) + '%';
-
-    // Set question
-    document.getElementById('problem-question').innerHTML = problem.question;
-
-    // Build shuffled choices
-    const allChoices = [
-        { text: problem.correctAnswer, correct: true },
-        ...problem.wrongAnswers.map(w => ({ text: w, correct: false }))
-    ];
-    const shuffled = shuffle(allChoices);
-
-    const choicesEl = document.getElementById('problem-choices');
-    const labels = ['A', 'B', 'C', 'D'];
-    choicesEl.innerHTML = shuffled.map((choice, i) => `
-        <button class="choice-btn" data-correct="${choice.correct}" data-index="${i}" onclick="selectChoice(this)">
-            <span class="choice-label">${labels[i]}</span>${choice.text}
-        </button>
-    `).join('');
-
-    // Hide feedback & next button
-    document.getElementById('feedback-area').classList.add('hidden');
-    document.getElementById('next-problem-btn').classList.add('hidden');
-
-    // Start timer if timed mode
-    if (sessionState.mode === 'timed') {
-        startTimer();
-    }
-}
-
-function selectChoice(btn) {
-    if (sessionState.answered) return;
-    sessionState.answered = true;
-
-    // Stop timer
-    if (sessionState.timerInterval) {
-        clearInterval(sessionState.timerInterval);
-        sessionState.timerInterval = null;
-    }
-
-    const isCorrect = btn.dataset.correct === 'true';
-
-    // Disable all buttons and show correct/incorrect
-    document.querySelectorAll('.choice-btn').forEach(b => {
-        b.classList.add('disabled');
-        if (b.dataset.correct === 'true') {
-            b.classList.add('correct');
-        }
-    });
-
-    if (isCorrect) {
-        btn.classList.add('correct');
-        sessionState.score++;
-        sessionState.answers.push({ correct: true, timeout: false });
-    } else {
-        btn.classList.add('incorrect');
-        sessionState.answers.push({ correct: false, timeout: false });
-    }
-
-    document.getElementById('session-score').textContent = sessionState.score;
-
-    // Show feedback
-    showFeedback(isCorrect, false);
-
-    // Show next button
-    document.getElementById('next-problem-btn').classList.remove('hidden');
-}
-
-function showFeedback(isCorrect, isTimeout) {
-    const feedbackArea = document.getElementById('feedback-area');
-    const banner = document.getElementById('feedback-banner');
-    const icon = document.getElementById('feedback-icon');
-    const text = document.getElementById('feedback-text');
-    const explanation = document.getElementById('feedback-explanation');
-
-    feedbackArea.classList.remove('hidden');
-    banner.className = 'feedback-banner';
-
-    if (isTimeout) {
-        banner.classList.add('timeout');
-        icon.textContent = '⏱️';
-        text.textContent = "Time's up!";
-    } else if (isCorrect) {
-        banner.classList.add('correct');
-        icon.textContent = '✅';
-        text.textContent = pickRandom(['Correct!', 'Great job!', 'Nailed it!', 'Perfect!', 'Well done!']);
-    } else {
-        banner.classList.add('incorrect');
-        icon.textContent = '❌';
-        text.textContent = pickRandom(["Not quite.", "That's not right.", "Incorrect.", "Almost!"]);
-    }
-
-    const problem = sessionState.problems[sessionState.currentIndex];
-    explanation.innerHTML = `<strong>Explanation:</strong><br>${problem.explanation}`;
-}
-
-function nextProblem() {
-    sessionState.currentIndex++;
-
-    if (sessionState.currentIndex >= PROBLEMS_PER_SESSION) {
-        endSession();
-    } else {
-        showProblem(sessionState.currentIndex);
-    }
-}
-
-// --- TIMER ---
-
-function startTimer() {
-    const duration = TIMER_DURATIONS[sessionState.difficulty] || 30;
-    sessionState.timeLeft = duration;
-
-    const timerEl = document.getElementById('session-timer');
-    const timerVal = document.getElementById('timer-value');
-    timerVal.textContent = duration;
-    timerEl.className = 'session-timer';
-
-    if (sessionState.timerInterval) clearInterval(sessionState.timerInterval);
-
-    sessionState.timerInterval = setInterval(() => {
-        sessionState.timeLeft--;
-        timerVal.textContent = sessionState.timeLeft;
-
-        if (sessionState.timeLeft <= 10) {
-            timerEl.className = 'session-timer danger';
-        } else if (sessionState.timeLeft <= 15) {
-            timerEl.className = 'session-timer warning';
-        }
-
-        if (sessionState.timeLeft <= 0) {
-            clearInterval(sessionState.timerInterval);
-            sessionState.timerInterval = null;
-            handleTimeout();
-        }
-    }, 1000);
-}
-
-function handleTimeout() {
-    if (sessionState.answered) return;
-    sessionState.answered = true;
-
-    sessionState.answers.push({ correct: false, timeout: true });
-
-    // Reveal correct answer
-    document.querySelectorAll('.choice-btn').forEach(b => {
-        b.classList.add('disabled');
-        if (b.dataset.correct === 'true') {
-            b.classList.add('correct');
-        }
-    });
-
-    showFeedback(false, true);
-    document.getElementById('next-problem-btn').classList.remove('hidden');
-}
-
-// --- SESSION END ---
-
-async function endSession() {
-    // Stop any active timer
-    if (sessionState.timerInterval) {
-        clearInterval(sessionState.timerInterval);
-        sessionState.timerInterval = null;
-    }
-
-    const { score, answers, topic, mode } = sessionState;
-    const total = PROBLEMS_PER_SESSION;
-    const accuracy = Math.round((score / total) * 100);
-    const xpPerProblem = mode === 'timed' ? 15 : 10;
-    const xpEarned = score * xpPerProblem;
-
-    // Update Firebase
-    const user = auth.currentUser;
-    if (user) {
-        if (xpEarned > 0) {
-            await awardXP(user.uid, xpEarned);
-        }
-
-        const userRef = doc(db, 'users', user.uid);
-        const updateData = {
-            [`stats.totalProblems`]: increment(score),
-            [`stats.${topic}`]: increment(score)
-        };
-        if (mode === 'timed') {
-            updateData['stats.timedChallenges'] = increment(1);
-        }
-        await updateDoc(userRef, updateData);
-        await loadProfile(user.uid);
-    }
-
-    // Show summary
-    hideAllViews();
-    document.getElementById('session-summary').classList.remove('hidden');
-
-    // Summary icon and title
-    let summaryIcon, summaryTitle, summarySubtitle;
-    if (accuracy === 100) {
-        summaryIcon = '🏆'; summaryTitle = 'Perfect Score!'; summarySubtitle = "Incredible — you didn't miss a single one!";
-    } else if (accuracy >= 80) {
-        summaryIcon = '🎉'; summaryTitle = 'Great Job!'; summarySubtitle = "You're mastering this material!";
-    } else if (accuracy >= 60) {
-        summaryIcon = '👍'; summaryTitle = 'Good Effort!'; summarySubtitle = 'Keep practicing to improve!';
-    } else if (accuracy >= 40) {
-        summaryIcon = '💪'; summaryTitle = 'Keep Going!'; summarySubtitle = "Review the explanations and try again.";
-    } else {
-        summaryIcon = '📚'; summaryTitle = 'Time to Study!'; summarySubtitle = "Check out the Learn section for help.";
-    }
-
-    document.getElementById('summary-icon').textContent = summaryIcon;
-    document.getElementById('summary-title').textContent = summaryTitle;
-    document.getElementById('summary-subtitle').textContent = summarySubtitle;
-
-    document.getElementById('summary-correct').textContent = score;
-    document.getElementById('summary-total-problems').textContent = total;
-    document.getElementById('summary-accuracy').textContent = accuracy + '%';
-    document.getElementById('summary-xp').textContent = `+${xpEarned} XP`;
-
-    // Breakdown
-    const breakdownEl = document.getElementById('summary-breakdown');
-    breakdownEl.innerHTML = answers.map((a, i) => {
-        const p = sessionState.problems[i];
-        const cls = a.timeout ? 'timeout-item' : a.correct ? 'correct-item' : 'incorrect-item';
-        const icon = a.timeout ? '⏱️' : a.correct ? '✅' : '❌';
-        const shortQ = p.question.replace(/<[^>]*>/g, ' ').substring(0, 60).trim();
-        return `<div class="breakdown-item ${cls}">
-            <span class="breakdown-icon">${icon}</span>
-            <span class="breakdown-text">${shortQ}…</span>
-        </div>`;
-    }).join('');
-}
-
-function quitSession() {
-    if (sessionState.timerInterval) {
-        clearInterval(sessionState.timerInterval);
-        sessionState.timerInterval = null;
-    }
-    hideAllViews();
-    document.getElementById('main-view').classList.remove('hidden');
-    showPracticeView();
-}
-
-function practiceAgain() {
-    hideAllViews();
-    document.getElementById('main-view').classList.remove('hidden');
-    showPracticeView();
-}
 
 function backToDashboardFromSummary() {
     hideAllViews();
