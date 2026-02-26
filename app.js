@@ -1,6 +1,6 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { lessonPaths } from './lessons.js';
 import { generators } from './generators.js';
@@ -21,6 +21,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
+const googleProvider = new GoogleAuthProvider();
 
 // Current path and lesson state
 let currentPath = null;
@@ -174,6 +175,36 @@ const badges = {
             return completed.filter(l => l.startsWith('trigonometry-')).length >= 10;
         }
     },
+    'prealgebra-master': {
+        id: 'prealgebra-master',
+        name: 'Pre-Algebra Master',
+        icon: '🔢',
+        description: 'Complete all pre-algebra lessons',
+        requirement: (stats, userData) => {
+            const completed = userData.completedLessons || [];
+            return completed.filter(l => l.startsWith('prealgebra-')).length >= 10;
+        }
+    },
+    'statistics-master': {
+        id: 'statistics-master',
+        name: 'Statistics Master',
+        icon: '📈',
+        description: 'Complete all statistics lessons',
+        requirement: (stats, userData) => {
+            const completed = userData.completedLessons || [];
+            return completed.filter(l => l.startsWith('statistics-')).length >= 10;
+        }
+    },
+    'calculus-master': {
+        id: 'calculus-master',
+        name: 'Calculus Master',
+        icon: '∫',
+        description: 'Complete all calculus lessons',
+        requirement: (stats, userData) => {
+            const completed = userData.completedLessons || [];
+            return completed.filter(l => l.startsWith('calculus-')).length >= 10;
+        }
+    },
     'speed-demon': {
         id: 'speed-demon',
         name: 'Speed Demon',
@@ -229,6 +260,10 @@ window.startRetryMissedFromSummary = startRetryMissedFromSummary;
 window.toggleSubtopic = toggleSubtopic;
 window.setProblemCount = setProblemCount;
 window.resetPassword = resetPassword;
+window.signInWithGoogle = signInWithGoogle;
+window.createChallenge = createChallenge;
+window.joinChallenge = joinChallenge;
+window.switchLeaderboard = switchLeaderboard;
 
 // Friendly Firebase error messages
 function getFriendlyError(errorCode) {
@@ -290,6 +325,9 @@ async function signup() {
                 algebra: 0,
                 geometry: 0,
                 trigonometry: 0,
+                prealgebra: 0,
+                statistics: 0,
+                calculus: 0,
                 timedChallenges: 0
             }
         });
@@ -351,6 +389,47 @@ async function resetPassword() {
     } catch (error) {
         errorMessage.style.color = '';
         errorMessage.textContent = getFriendlyError(error.code);
+    }
+}
+
+async function signInWithGoogle() {
+    const errorMessage = document.getElementById('error-message');
+    errorMessage.textContent = '';
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        // Create user doc if first time
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        if (!userSnap.exists()) {
+            await setDoc(userRef, {
+                email: user.email,
+                displayName: user.displayName || '',
+                bio: '',
+                profilePicture: user.photoURL || '',
+                createdAt: new Date().toISOString(),
+                xp: 0,
+                weeklyXP: 0,
+                weekStart: getWeekStart(),
+                completedLessons: [],
+                badges: [],
+                stats: {
+                    totalProblems: 0,
+                    algebra: 0,
+                    geometry: 0,
+                    trigonometry: 0,
+                    prealgebra: 0,
+                    statistics: 0,
+                    calculus: 0,
+                    timedChallenges: 0
+                }
+            });
+        }
+    } catch (error) {
+        if (error.code !== 'auth/popup-closed-by-user') {
+            errorMessage.textContent = getFriendlyError(error.code);
+        }
+        console.error('Google sign-in error:', error);
     }
 }
 // Save Profile
@@ -500,7 +579,7 @@ function updateXPDisplay(xp) {
 
 // Update Path Progress
 function updatePathProgress(completedLessons) {
-    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
         const pathLessons = lessonPaths[topic].lessons;
         const completed = pathLessons.filter(lesson => 
             completedLessons.includes(`${topic}-${lesson.id}`)
@@ -617,6 +696,16 @@ async function openLessonFromPath(topic, lessonId) {
 
     let contentHtml = '';
     let practiceGlobalIndex = 0;
+    const seenLessonQuestions = new Set(); // Track all questions to prevent duplicates
+
+    // Pre-collect static question keys so generated ones don't duplicate them
+    lesson.sections.forEach(section => {
+        if (section.type === 'practice') {
+            section.problems.forEach(p => {
+                seenLessonQuestions.add(p.question.replace(/<[^>]+>/g, '').trim());
+            });
+        }
+    });
 
     lesson.sections.forEach(section => {
         if (section.type === 'text') {
@@ -632,6 +721,20 @@ async function openLessonFromPath(topic, lessonId) {
             contentHtml += `
                 <div class="lesson-tips">
                     ${section.content}
+                </div>
+            `;
+        } else if (section.type === 'steps') {
+            contentHtml += `
+                <div class="lesson-steps-block">
+                    <h4 class="steps-title">📋 ${section.title}</h4>
+                    <div class="steps-container">
+                        ${section.steps.map((step, si) => `
+                            <div class="step-item" style="animation-delay: ${si * 0.4}s">
+                                <div class="step-number">${si + 1}</div>
+                                <div class="step-text">${step}</div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             `;
         } else if (section.type === 'practice') {
@@ -665,10 +768,20 @@ async function openLessonFromPath(topic, lessonId) {
             section.generators.forEach(genId => {
                 const gIdx = practiceGlobalIndex;
                 const labels = ['A', 'B', 'C', 'D'];
-                // Call the generator to create a fresh problem
+                // Call the generator, with dedup retries
                 const genFunc = generators[genId];
                 if (!genFunc) { practiceGlobalIndex++; return; }
-                const prob = genFunc();
+                let prob = null;
+                for (let attempt = 0; attempt < 10; attempt++) {
+                    const candidate = genFunc();
+                    const qKey = candidate.question.replace(/<[^>]+>/g, '').trim();
+                    if (!seenLessonQuestions.has(qKey)) {
+                        prob = candidate;
+                        seenLessonQuestions.add(qKey);
+                        break;
+                    }
+                }
+                if (!prob) prob = genFunc(); // last resort: allow duplicate
                 // Store for answer checking
                 lessonPracticeState.generatedProblems[gIdx] = prob;
                 contentHtml += `
@@ -883,12 +996,17 @@ async function completeLesson() {
 }
 
 // Load Leaderboard
-async function loadLeaderboard() {
+let currentLeaderboardTab = 'weekly';
+
+async function loadLeaderboard(tab) {
+    tab = tab || currentLeaderboardTab;
     const leaderboardList = document.getElementById('leaderboard-list');
     leaderboardList.innerHTML = '<div class="loading-message">Loading leaderboard...</div>';
     
+    const orderField = tab === 'weekly' ? 'weeklyXP' : 'xp';
+    
     try {
-        const q = query(collection(db, 'users'), orderBy('weeklyXP', 'desc'), limit(10));
+        const q = query(collection(db, 'users'), orderBy(orderField, 'desc'), limit(10));
         const querySnapshot = await getDocs(q);
         
         leaderboardList.innerHTML = '';
@@ -899,23 +1017,27 @@ async function loadLeaderboard() {
         }
         
         let rank = 1;
-        querySnapshot.forEach((doc) => {
-            const data = doc.data();
+        const currentUser = auth.currentUser;
+        querySnapshot.forEach((docSnap) => {
+            const data = docSnap.data();
             const level = calculateLevel(data.xp || 0);
+            const xpValue = tab === 'weekly' ? (data.weeklyXP || 0) : (data.xp || 0);
             
             const itemEl = document.createElement('div');
             itemEl.className = 'leaderboard-item';
             if (rank <= 3) itemEl.classList.add('top-' + rank);
+            if (currentUser && docSnap.id === currentUser.uid) itemEl.classList.add('lb-you');
             
             const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+            const youBadge = (currentUser && docSnap.id === currentUser.uid) ? ' <span class="lb-you-tag">You</span>' : '';
             
             itemEl.innerHTML = `
                 <div class="rank">${rankIcon}</div>
                 <div class="user-info">
-                    <div class="user-name">${data.displayName || 'Anonymous'}</div>
-                    <div class="user-stats">Level ${level} • ${data.xp || 0} XP</div>
+                    <div class="user-name">${data.displayName || 'Anonymous'}${youBadge}</div>
+                    <div class="user-stats">Level ${level} • ${data.xp || 0} total XP</div>
                 </div>
-                <div class="user-badges">${data.weeklyXP || 0} XP</div>
+                <div class="user-badges">${xpValue} XP</div>
             `;
             
             leaderboardList.appendChild(itemEl);
@@ -925,6 +1047,34 @@ async function loadLeaderboard() {
         console.error('Error loading leaderboard:', error);
         leaderboardList.innerHTML = '<div class="loading-message">Error loading leaderboard</div>';
     }
+    
+    // Update reset timer
+    updateResetTimer();
+}
+
+function switchLeaderboard(tab) {
+    currentLeaderboardTab = tab;
+    document.getElementById('lb-tab-weekly').classList.toggle('active', tab === 'weekly');
+    document.getElementById('lb-tab-alltime').classList.toggle('active', tab === 'alltime');
+    document.getElementById('lb-subtitle').textContent = tab === 'weekly' ? 'Top students this week' : 'Top students of all time';
+    document.getElementById('lb-reset-timer').classList.toggle('hidden', tab !== 'weekly');
+    loadLeaderboard(tab);
+}
+
+function updateResetTimer() {
+    const timerEl = document.getElementById('lb-reset-timer');
+    if (!timerEl) return;
+    // Calculate time until next Monday 00:00
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const daysUntilMon = day === 0 ? 1 : (8 - day);
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysUntilMon);
+    nextMonday.setHours(0, 0, 0, 0);
+    const diff = nextMonday - now;
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    timerEl.textContent = `⏱️ Resets in ${days}d ${hours}h`;
 }
 
 // Show Leaderboard
@@ -932,6 +1082,256 @@ function showLeaderboard() {
     hideAllViews();
     document.getElementById('leaderboard-view').classList.remove('hidden');
     loadLeaderboard();
+    loadActiveChallenges();
+}
+
+// ============================================================
+// CONFETTI ENGINE
+// ============================================================
+function launchConfetti() {
+    const canvas = document.getElementById('confetti-canvas');
+    if (!canvas) return;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    
+    const colors = ['#667eea', '#764ba2', '#2ecc71', '#f39c12', '#e74c3c', '#3498db', '#ff6b9d', '#ffd700'];
+    const particles = [];
+    
+    for (let i = 0; i < 150; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height - canvas.height,
+            w: Math.random() * 10 + 5,
+            h: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            vx: (Math.random() - 0.5) * 4,
+            vy: Math.random() * 3 + 2,
+            rot: Math.random() * 360,
+            rotSpeed: (Math.random() - 0.5) * 8,
+            opacity: 1
+        });
+    }
+    
+    let frame = 0;
+    const maxFrames = 180;
+    
+    function animate() {
+        frame++;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const fadeStart = maxFrames * 0.6;
+        
+        particles.forEach(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.04; // gravity
+            p.rot += p.rotSpeed;
+            if (frame > fadeStart) p.opacity = Math.max(0, 1 - (frame - fadeStart) / (maxFrames - fadeStart));
+            
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot * Math.PI / 180);
+            ctx.globalAlpha = p.opacity;
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+            ctx.restore();
+        });
+        
+        if (frame < maxFrames) {
+            requestAnimationFrame(animate);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            canvas.style.display = 'none';
+        }
+    }
+    
+    animate();
+}
+
+// ============================================================
+// FRIEND CHALLENGES
+// ============================================================
+function generateChallengeCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    return code;
+}
+
+async function createChallenge() {
+    const user = auth.currentUser;
+    if (!user) { showToast('Please log in first', 'error'); return; }
+    
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    const displayName = userSnap.exists() ? (userSnap.data().displayName || 'Anonymous') : 'Anonymous';
+    
+    const code = generateChallengeCode();
+    const challengeRef = doc(db, 'challenges', code);
+    
+    try {
+        await setDoc(challengeRef, {
+            code,
+            creatorId: user.uid,
+            creatorName: displayName,
+            createdAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            status: 'open',
+            topic: 'mixed',
+            problemCount: 10,
+            results: {}
+        });
+        
+        const statusEl = document.getElementById('fc-status');
+        statusEl.classList.remove('hidden');
+        statusEl.innerHTML = `
+            <div class="fc-code-display">
+                <span class="fc-code-label">Your challenge code:</span>
+                <span class="fc-code-value">${code}</span>
+                <button class="fc-copy-btn" onclick="navigator.clipboard.writeText('${code}'); showToast('Code copied!')">📋 Copy</button>
+            </div>
+            <p class="fc-code-hint">Share this code with a friend. Challenge expires in 24 hours.</p>
+        `;
+        
+        loadActiveChallenges();
+    } catch (error) {
+        console.error('Error creating challenge:', error);
+        showToast('Error creating challenge', 'error');
+    }
+}
+
+async function joinChallenge() {
+    const user = auth.currentUser;
+    if (!user) { showToast('Please log in first', 'error'); return; }
+    
+    const code = document.getElementById('fc-join-code').value.trim().toUpperCase();
+    if (!code || code.length < 4) {
+        showToast('Enter a valid challenge code', 'error');
+        return;
+    }
+    
+    try {
+        const challengeRef = doc(db, 'challenges', code);
+        const challengeSnap = await getDoc(challengeRef);
+        
+        if (!challengeSnap.exists()) {
+            showToast('Challenge not found', 'error');
+            return;
+        }
+        
+        const data = challengeSnap.data();
+        
+        if (new Date(data.expiresAt) < new Date()) {
+            showToast('This challenge has expired', 'error');
+            return;
+        }
+        
+        if (data.creatorId === user.uid) {
+            showToast("You can't join your own challenge!", 'error');
+            return;
+        }
+        
+        // Start a timed 10-problem mixed session
+        const userRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        const completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+        
+        // Store challenge context for endSession to record the result
+        sessionState.challengeCode = code;
+        sessionState.challengeData = data;
+        
+        // Generate problems from all completed topics
+        const allTopics = ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'];
+        let problems = [];
+        for (const t of shuffle(allTopics)) {
+            if (problems.length >= 10) break;
+            const tp = generateProblemsFromGenerators(t, 3, completedLessons);
+            problems.push(...tp);
+        }
+        problems = shuffle(problems).slice(0, 10);
+        
+        if (problems.length === 0) {
+            showToast('Complete some lessons first to join challenges!', 'error');
+            return;
+        }
+        
+        practiceState.topic = 'mixed';
+        launchSession(problems, `⚔️ Challenge vs ${data.creatorName}`, '', 'timed', problems.length);
+        showToast(`Challenge accepted! Beat ${data.creatorName}!`);
+        
+    } catch (error) {
+        console.error('Error joining challenge:', error);
+        showToast('Error joining challenge', 'error');
+    }
+}
+
+async function recordChallengeResult(code, score, total) {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    const displayName = userSnap.exists() ? (userSnap.data().displayName || 'Anonymous') : 'Anonymous';
+    
+    try {
+        const challengeRef = doc(db, 'challenges', code);
+        await updateDoc(challengeRef, {
+            [`results.${user.uid}`]: {
+                name: displayName,
+                score,
+                total,
+                accuracy: Math.round((score / total) * 100),
+                completedAt: new Date().toISOString()
+            }
+        });
+    } catch (error) {
+        console.error('Error recording challenge result:', error);
+    }
+}
+
+async function loadActiveChallenges() {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const listEl = document.getElementById('fc-active-list');
+    if (!listEl) return;
+    
+    try {
+        // Query challenges created by the user
+        const q = query(collection(db, 'challenges'), orderBy('createdAt', 'desc'), limit(5));
+        const snap = await getDocs(q);
+        
+        const relevant = [];
+        snap.forEach(docSnap => {
+            const data = docSnap.data();
+            if (data.creatorId === user.uid || (data.results && data.results[user.uid])) {
+                if (new Date(data.expiresAt) > new Date()) {
+                    relevant.push(data);
+                }
+            }
+        });
+        
+        if (relevant.length === 0) {
+            listEl.innerHTML = '';
+            return;
+        }
+        
+        listEl.innerHTML = '<h4 class="fc-active-title">Your Challenges</h4>' +
+            relevant.map(ch => {
+                const resultEntries = Object.entries(ch.results || {});
+                const resultsHtml = resultEntries.length > 0
+                    ? resultEntries.map(([uid, r]) => `<span class="fc-result">${r.name}: ${r.score}/${r.total} (${r.accuracy}%)</span>`).join(' vs ')
+                    : '<span class="fc-waiting">Waiting for challenger…</span>';
+                return `<div class="fc-active-item">
+                    <span class="fc-active-code">${ch.code}</span>
+                    <span class="fc-active-results">${resultsHtml}</span>
+                </div>`;
+            }).join('');
+    } catch (error) {
+        console.error('Error loading challenges:', error);
+    }
 }
 
 // Toggle Edit Mode
@@ -1011,6 +1411,52 @@ let sessionState = {
 // Missed questions queue (persists across sessions in memory)
 let missedQueue = [];
 
+// ============================================================
+// ADAPTIVE DIFFICULTY
+// ============================================================
+let adaptiveLevel = 'medium'; // 'easy', 'medium', 'hard'
+
+function updateAdaptiveLevel() {
+    const { streak, answers } = sessionState;
+    const recent5 = answers.slice(-5);
+    const recentCorrect = recent5.filter(a => a.correct).length;
+    if (streak >= 3 || recentCorrect >= 4) adaptiveLevel = 'hard';
+    else if (recent5.length >= 3 && recentCorrect <= 1) adaptiveLevel = 'easy';
+    else adaptiveLevel = 'medium';
+}
+
+// ============================================================
+// SPACED REPETITION
+// ============================================================
+async function getSpacedRepetitionProblems(currentTopic, count, completedLessons) {
+    const allTopics = ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'];
+    const otherTopics = allTopics.filter(t => t !== currentTopic);
+    const topicsWithLessons = otherTopics.filter(t =>
+        completedLessons.some(l => l.startsWith(t + '-'))
+    );
+    if (topicsWithLessons.length === 0) return [];
+    const user = auth.currentUser;
+    if (!user) return [];
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return [];
+    const stats = userSnap.data().stats || {};
+    // Sort by least practiced
+    const ranked = topicsWithLessons
+        .map(t => ({ topic: t, total: stats[`${t}Total`] || 0 }))
+        .sort((a, b) => a.total - b.total);
+    const reviewTopics = ranked.slice(0, 2).map(r => r.topic);
+    const reviewCount = Math.min(count, Math.max(1, Math.floor(count * 0.25)));
+    const reviewProblems = [];
+    for (const rt of reviewTopics) {
+        if (reviewProblems.length >= reviewCount) break;
+        const problems = generateProblemsFromGenerators(rt, Math.ceil(reviewCount / reviewTopics.length), completedLessons);
+        problems.forEach(p => { p.isReview = true; p.reviewTopic = rt; });
+        reviewProblems.push(...problems);
+    }
+    return reviewProblems.slice(0, reviewCount);
+}
+
 // Daily progress (resets each day)
 let dailyProgress = { date: new Date().toDateString(), solved: 0 };
 
@@ -1033,7 +1479,7 @@ function pickRandom(arr) {
 // Build subtopic map: topic → [ { id, title, gens: [...] } ]
 function getSubtopicMap() {
     const map = {};
-    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
         map[topic] = lessonPaths[topic].lessons.map(lesson => {
             const gens = [];
             lesson.sections.forEach(s => {
@@ -1083,7 +1529,7 @@ async function updateMasteryRings() {
     if (!userSnap.exists()) return;
     const stats = userSnap.data().stats || {};
 
-    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
         const correct = stats[topic] || 0;
         const total = stats[`${topic}Total`] || 0;
         const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -1262,7 +1708,7 @@ async function startQuickPractice() {
 
     // Gather all generators from completed lessons
     const allGenIds = [];
-    ['algebra', 'geometry', 'trigonometry'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
         lessonPaths[topic].lessons.forEach(lesson => {
             if (completed.includes(`${topic}-${lesson.id}`)) {
                 lesson.sections.forEach(s => {
@@ -1281,18 +1727,40 @@ async function startQuickPractice() {
         return;
     }
 
-    // Generate 10 random problems
+    // Generate 10 random problems (deduplicated)
     const problems = [];
+    const seenQuestions = new Set();
     const shuffled = shuffle([...allGenIds]);
     for (let i = 0; i < 10; i++) {
         const gId = shuffled[i % shuffled.length];
-        const p = generators[gId]();
-        problems.push({
-            question: p.question,
-            correctAnswer: p.choices[p.correctIndex],
-            wrongAnswers: p.choices.filter((_, j) => j !== p.correctIndex),
-            explanation: p.explanation
-        });
+        let prob = null;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const p = generators[gId]();
+            const qKey = p.question.replace(/<[^>]+>/g, '').trim();
+            if (!seenQuestions.has(qKey)) {
+                seenQuestions.add(qKey);
+                prob = p;
+                break;
+            }
+        }
+        if (!prob) {
+            // Try any generator
+            for (const fbId of shuffle([...allGenIds])) {
+                try {
+                    const fp = generators[fbId]();
+                    const fqKey = fp.question.replace(/<[^>]+>/g, '').trim();
+                    if (!seenQuestions.has(fqKey)) { seenQuestions.add(fqKey); prob = fp; break; }
+                } catch(e) {}
+            }
+        }
+        if (prob) {
+            problems.push({
+                question: prob.question,
+                correctAnswer: prob.choices[prob.correctIndex],
+                wrongAnswers: prob.choices.filter((_, j) => j !== prob.correctIndex),
+                explanation: prob.explanation
+            });
+        }
     }
 
     practiceState.topic = 'mixed';
@@ -1311,7 +1779,7 @@ function convertGenProblem(gp) {
     };
 }
 
-function generateProblemsFromGenerators(topic, count) {
+function generateProblemsFromGenerators(topic, count, completedLessons) {
     const subtopicMap = getSubtopicMap();
     let available = subtopicMap[topic] || [];
 
@@ -1319,34 +1787,57 @@ function generateProblemsFromGenerators(topic, count) {
     if (practiceState.subtopics.length > 0) {
         available = available.filter(st => practiceState.subtopics.includes(st.id));
     }
+    // Filter to completed lessons only (if list provided)
+    else if (completedLessons && completedLessons.length > 0) {
+        available = available.filter(st => completedLessons.includes(`${topic}-${st.id}`));
+    }
 
-    // Collect all valid generator IDs
-    let allGenIds = [];
-    available.forEach(st => {
-        st.gens.forEach(gId => { if (generators[gId]) allGenIds.push(gId); });
-    });
+    // Collect all valid generator IDs (deduplicated)
+    let allGenIds = [...new Set(
+        available.flatMap(st => st.gens.filter(gId => generators[gId]))
+    )];
 
     if (allGenIds.length === 0) return [];
 
     const problems = [];
+    const seenQuestions = new Set();
     const shuffledGens = shuffle([...allGenIds]);
 
     for (let i = 0; i < count; i++) {
         const gId = shuffledGens[i % shuffledGens.length];
         let prob = null;
-        for (let attempt = 0; attempt < 5; attempt++) {
+        for (let attempt = 0; attempt < 10; attempt++) {
             try {
                 prob = generators[gId]();
-                if (prob && prob.choices && prob.correctIndex >= 0) break;
+                if (prob && prob.choices && prob.correctIndex >= 0) {
+                    // Dedup: check if we already have this question
+                    const qKey = prob.question.replace(/<[^>]+>/g, '').trim();
+                    if (!seenQuestions.has(qKey)) {
+                        seenQuestions.add(qKey);
+                        break;
+                    }
+                }
                 prob = null;
             } catch(e) { prob = null; }
         }
         if (prob) {
             problems.push(convertGenProblem(prob));
         } else {
-            // Fallback to any random working generator
-            const fb = pickRandom(allGenIds);
-            problems.push(convertGenProblem(generators[fb]()));
+            // Fallback: try any random generator we haven't exhausted
+            let found = false;
+            for (const fbId of shuffle([...allGenIds])) {
+                try {
+                    const fp = generators[fbId]();
+                    const fqKey = fp.question.replace(/<[^>]+>/g, '').trim();
+                    if (!seenQuestions.has(fqKey)) {
+                        seenQuestions.add(fqKey);
+                        problems.push(convertGenProblem(fp));
+                        found = true;
+                        break;
+                    }
+                } catch(e) {}
+            }
+            if (!found && prob) problems.push(convertGenProblem(prob)); // last resort: allow dup
         }
     }
     return problems;
@@ -1372,7 +1863,7 @@ function generateProblemsLegacy(topic, difficulty, count) {
 
 // --- SESSION MANAGEMENT ---
 
-function startPractice() {
+async function startPractice() {
     const { topic, mode, problemCount } = practiceState;
     if (!topic) {
         showToast('Please select a topic first!', 'error');
@@ -1381,15 +1872,40 @@ function startPractice() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // Use generators.js, fallback to legacy medium
-    let problems = generateProblemsFromGenerators(topic, problemCount);
+    // Get completed lessons to filter generators
+    let completedLessons = [];
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) completedLessons = userSnap.data().completedLessons || [];
+
+    // Use generators.js, filtered to completed lessons
+    const mainCount = Math.max(1, problemCount);
+    let problems = generateProblemsFromGenerators(topic, mainCount, completedLessons);
     if (problems.length === 0) {
         problems = generateProblemsLegacy(topic, 'medium', problemCount);
     }
     if (problems.length === 0) {
-        showToast('No problems available for this selection.', 'error');
+        showToast('Complete some lessons first to unlock practice!', 'error');
         return;
     }
+
+    // Spaced repetition: inject ~25% review from other completed topics
+    try {
+        const reviewProblems = await getSpacedRepetitionProblems(topic, problemCount, completedLessons);
+        if (reviewProblems.length > 0) {
+            // Replace last N main problems with review problems
+            const replaceCount = Math.min(reviewProblems.length, problems.length);
+            problems.splice(problems.length - replaceCount, replaceCount, ...reviewProblems.slice(0, replaceCount));
+            // Shuffle so review isn't always at the end
+            for (let i = problems.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [problems[i], problems[j]] = [problems[j], problems[i]];
+            }
+        }
+    } catch(e) { /* proceed without review problems */ }
+
+    // Reset adaptive difficulty for new session
+    adaptiveLevel = 'medium';
 
     const topicLabel = topic.charAt(0).toUpperCase() + topic.slice(1);
     launchSession(problems, topicLabel, '', mode, problems.length);
@@ -1445,8 +1961,11 @@ function showProblem(index) {
     document.getElementById('session-progress-text').textContent = `Problem ${index + 1} of ${total}`;
     document.getElementById('session-progress-fill').style.width = ((index) / total * 100) + '%';
 
-    // Question
-    document.getElementById('problem-question').innerHTML = problem.question;
+    // Question with optional review tag
+    const reviewHtml = problem.isReview
+        ? `<span class="review-tag">🔄 Review: ${problem.reviewTopic}</span><br>`
+        : '';
+    document.getElementById('problem-question').innerHTML = reviewHtml + problem.question;
 
     // Shuffled choices
     const allChoices = [
@@ -1513,6 +2032,7 @@ function selectChoice(btn) {
     }
 
     updateStreakDisplay();
+    updateAdaptiveLevel();
     document.getElementById('session-score').textContent = sessionState.score;
     showFeedback(isCorrect, false);
     document.getElementById('next-problem-btn').classList.remove('hidden');
@@ -1686,6 +2206,18 @@ async function endSession() {
         } else {
             retryBtn.classList.add('hidden');
         }
+    }
+
+    // Confetti on great scores
+    if (accuracy >= 80) {
+        launchConfetti();
+    }
+
+    // Save challenge result if this was a friend challenge
+    if (sessionState.challengeCode) {
+        await recordChallengeResult(sessionState.challengeCode, score, total);
+        sessionState.challengeCode = null;
+        sessionState.challengeData = null;
     }
 
     // Review heading
