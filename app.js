@@ -1,9 +1,10 @@
 // Import Firebase modules
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs, updateDoc, increment, arrayUnion, runTransaction, where, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
 import { lessonPaths } from './lessons.js';
 import { generators } from './generators.js';
+import { svgVisuals } from './svgVisuals.js';
 
 // Your Firebase configuration
 // TODO: Replace this with your actual Firebase config from Firebase Console
@@ -23,6 +24,14 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
+// ---- HTML sanitisation helper — prevent XSS when inserting user-supplied text into innerHTML ----
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // Current path and lesson state
 let currentPath = null;
 let currentLessonId = null;
@@ -36,35 +45,24 @@ let lessonPracticeState = {
 
 // XP needed to reach a given level from zero
 function xpForLevel(level) {
-    return Math.floor(100 * Math.pow(1.4, level - 1));
+    return Math.floor(100 * Math.pow(1.2, level - 1));
 }
 
-// Which level is the user currently on
-function calculateLevel(xp) {
+// Returns { level, currentXP, nextLevelXP } — single pass, no repeated work
+function getLevelInfo(xp) {
     let level = 1;
     let total = 0;
     while (total + xpForLevel(level) <= xp) {
         total += xpForLevel(level);
         level++;
     }
-    return level;
+    return { level, currentXP: xp - total, nextLevelXP: xpForLevel(level) };
 }
 
-// XP accumulated within the current level
-function getCurrentLevelXP(xp) {
-    let total = 0;
-    let level = 1;
-    while (total + xpForLevel(level) <= xp) {
-        total += xpForLevel(level);
-        level++;
-    }
-    return xp - total;
-}
-
-// XP required to complete the current level
-function getXPForNextLevel(xp) {
-    return xpForLevel(calculateLevel(xp));
-}
+// Convenience wrappers kept for any call-sites that use the old API
+function calculateLevel(xp)      { return getLevelInfo(xp).level; }
+function getCurrentLevelXP(xp)   { return getLevelInfo(xp).currentXP; }
+function getXPForNextLevel(xp)   { return getLevelInfo(xp).nextLevelXP; }
 
 // Badge Definitions
 const badges = {
@@ -122,7 +120,7 @@ const badges = {
         name: 'Completionist',
         icon: '🎓',
         description: 'Complete all lessons',
-        requirement: (stats, userData) => (userData.completedLessons || []).length >= 30
+        requirement: (stats, userData) => (userData.completedLessons || []).length >= 40 // 4 paths × 10 lessons
     },
     'level-5': {
         id: 'level-5',
@@ -175,26 +173,6 @@ const badges = {
             return completed.filter(l => l.startsWith('trigonometry-')).length >= 10;
         }
     },
-    'prealgebra-master': {
-        id: 'prealgebra-master',
-        name: 'Pre-Algebra Master',
-        icon: '🔢',
-        description: 'Complete all pre-algebra lessons',
-        requirement: (stats, userData) => {
-            const completed = userData.completedLessons || [];
-            return completed.filter(l => l.startsWith('prealgebra-')).length >= 10;
-        }
-    },
-    'statistics-master': {
-        id: 'statistics-master',
-        name: 'Statistics Master',
-        icon: '📈',
-        description: 'Complete all statistics lessons',
-        requirement: (stats, userData) => {
-            const completed = userData.completedLessons || [];
-            return completed.filter(l => l.startsWith('statistics-')).length >= 10;
-        }
-    },
     'calculus-master': {
         id: 'calculus-master',
         name: 'Calculus Master',
@@ -213,6 +191,237 @@ const badges = {
         requirement: (stats) => stats.timedChallenges >= 10
     }
 };
+
+// ============================================================
+// KATEX RENDERING
+// ============================================================
+function renderMath(el) {
+    if (el && window._renderMathInEl) window._renderMathInEl(el);
+}
+
+// ============================================================
+// SVG VISUAL INJECTION
+// Maps lesson topic + lessonId keywords to auto-generated diagrams.
+// Injected before the first text section in the lesson.
+// ============================================================
+function getLessonVisual(topic, lessonId) {
+    const id = lessonId.toLowerCase();
+
+    // --- ALGEBRA ---
+    if (topic === 'algebra') {
+        if (id.includes('graph') || id.includes('slope')) return svgVisuals.coordinateLine({ m: 2, b: 1 });
+        if (id.includes('inequal')) return svgVisuals.numberLine({ value: 3, op: '<', min: -2, max: 8 });
+        if (id.includes('quadratic')) return svgVisuals.parabola({ a: 1, vertex: [2.5, -0.25], roots: [2, 3] });
+        if (id.includes('system')) return svgVisuals.coordinateLine({ m: 1, b: 0, range: 5 });
+    }
+
+    // --- GEOMETRY ---
+    if (topic === 'geometry') {
+        if (id.includes('circle') || id.includes('arc')) return svgVisuals.circle({ r: 5 });
+        if (id.includes('pythag')) return svgVisuals.pythSquares({ a: 3, b: 4, c: 5 });
+        if (id.includes('triangle') || id.includes('right')) return svgVisuals.rightTriangle({ a: 3, b: 4, c: 5 });
+        if (id.includes('angle')) return svgVisuals.angleDiagram({ degrees: 55, type: 'acute' });
+        if (id.includes('perimeter') || id.includes('area')) return svgVisuals.areaShape({ shape: 'rectangle', dims: { l: 8, w: 5 } });
+        if (id.includes('volume') || id.includes('surface')) return svgVisuals.shape3D({ shape: 'cube', dims: { s: 4 } });
+        if (id.includes('transform')) return svgVisuals.transformGrid({
+            original: [[1,1],[3,1],[3,3],[1,3]],
+            transformed: [[4,3],[6,3],[6,5],[4,5]],
+            type: 'translate'
+        });
+    }
+
+    // --- TRIGONOMETRY ---
+    if (topic === 'trigonometry') {
+        if (id.includes('unit')) return svgVisuals.unitCircle();
+        if (id.includes('graph')) return svgVisuals.sineWave({ func: 'sin', amplitude: 1 });
+        if (id.includes('radian')) return svgVisuals.unitCircle();
+        return svgVisuals.trigTriangle({ angle: 37, opp: 3, adj: 4, hyp: 5 });
+    }
+
+    // --- CALCULUS ---
+    if (topic === 'calculus') {
+        if (id.includes('deriv') || id.includes('diff') || id.includes('chain')) return svgVisuals.tangentLine();
+        if (id.includes('integr') || id.includes('anti') || id.includes('ftc') || id.includes('u-sub')) return svgVisuals.areaUnderCurve({ f: 'x²', a: 0, b: 2 });
+        if (id.includes('area')) return svgVisuals.areaUnderCurve({ f: 'x', a: 1, b: 3 });
+        if (id.includes('limit')) return svgVisuals.tangentLine();
+    }
+
+    return null;
+}
+
+// ============================================================
+// WORKED EXAMPLE SYSTEM
+// ============================================================
+let _weSteps = [];
+let _weStepIndex = 0;
+
+function showWorkedExample(btn) {
+    const genIds = (btn.dataset.genids || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (genIds.length === 0) return;
+
+    // Pick a random available generator
+    const genId = genIds[Math.floor(Math.random() * genIds.length)];
+    const genFunc = generators[genId];
+    if (!genFunc) return;
+
+    let prob;
+    try { prob = genFunc(); } catch(e) { return; }
+    if (!prob) return;
+
+    // Display question
+    const qEl = document.getElementById('we-question');
+    if (qEl) qEl.innerHTML = prob.question;
+
+    // Parse explanation into steps (split on <br> tags)
+    const rawExplanation = prob.explanation || '';
+    const correctAnswer = prob.choices ? prob.choices[prob.correctIndex] : '';
+    const allStepsRaw = rawExplanation.split(/<br\s*\/?>/i).map(s => s.trim()).filter(Boolean);
+
+    // Prepend the question setup and append the answer
+    _weSteps = [
+        `<span class="we-step-label">Question:</span> ${prob.question}`,
+        ...allStepsRaw.map((s, i) => `<span class="we-step-label">Step ${i + 1}:</span> ${s}`),
+        `<span class="we-step-label we-answer-label">✅ Answer:</span> <strong>${correctAnswer}</strong>`
+    ];
+    _weStepIndex = 0;
+
+    // Clear steps display
+    const stepsEl = document.getElementById('we-steps');
+    if (stepsEl) stepsEl.innerHTML = '';
+
+    // Reset buttons
+    const nextBtn = document.getElementById('we-next-btn');
+    const doneBtn = document.getElementById('we-done-btn');
+    if (nextBtn) { nextBtn.classList.remove('hidden'); nextBtn.textContent = 'Show Next Step →'; }
+    if (doneBtn) doneBtn.classList.add('hidden');
+
+    // Show modal
+    const modal = document.getElementById('we-modal-overlay');
+    if (modal) modal.classList.remove('hidden');
+
+    // KaTeX render
+    if (qEl) renderMath(qEl);
+}
+
+function revealNextStep() {
+    if (_weStepIndex >= _weSteps.length) return;
+
+    const stepsEl = document.getElementById('we-steps');
+    if (!stepsEl) return;
+
+    const step = document.createElement('div');
+    step.className = 'we-step we-step-reveal';
+    step.innerHTML = _weSteps[_weStepIndex];
+    stepsEl.appendChild(step);
+    renderMath(step);
+
+    // Scroll to show new step
+    step.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    _weStepIndex++;
+
+    const nextBtn = document.getElementById('we-next-btn');
+    const doneBtn = document.getElementById('we-done-btn');
+
+    if (_weStepIndex >= _weSteps.length) {
+        if (nextBtn) nextBtn.classList.add('hidden');
+        if (doneBtn) doneBtn.classList.remove('hidden');
+    } else {
+        if (nextBtn) nextBtn.textContent =
+            _weStepIndex === _weSteps.length - 1 ? 'Show Answer →' : `Show Step ${_weStepIndex + 1} →`;
+    }
+}
+
+function closeWorkedExample() {
+    const modal = document.getElementById('we-modal-overlay');
+    if (modal) modal.classList.add('hidden');
+    _weSteps = [];
+    _weStepIndex = 0;
+}
+
+// ============================================================
+// REAL-TIME MULTIPLAYER CHALLENGE
+// ============================================================
+let _challengeUnsubscribe = null;
+let _lastChallengeData = null;
+
+function startChallengeListener(code) {
+    stopChallengeListener();
+    const user = auth.currentUser;
+    if (!user || !code) return;
+
+    const overlay = document.getElementById('mp-overlay');
+    if (overlay) overlay.classList.remove('hidden');
+
+    _challengeUnsubscribe = onSnapshot(doc(db, 'challenges', code), snap => {
+        if (!snap.exists()) return;
+        _lastChallengeData = snap.data();
+        _updateMultiplayerOverlay(_lastChallengeData, user.uid);
+    });
+}
+
+function stopChallengeListener() {
+    if (_challengeUnsubscribe) { _challengeUnsubscribe(); _challengeUnsubscribe = null; }
+    _lastChallengeData = null;
+    const overlay = document.getElementById('mp-overlay');
+    if (overlay) overlay.classList.add('hidden');
+}
+
+function _updateMultiplayerOverlay(data, myUid) {
+    // My live score
+    const myScore = sessionState.score;
+    const total = sessionState.problemCount || 10;
+    const myPct = Math.round((myScore / total) * 100);
+    const myBar = document.getElementById('mp-you-bar');
+    const myScoreEl = document.getElementById('mp-you-score');
+    if (myBar) myBar.style.width = myPct + '%';
+    if (myScoreEl) myScoreEl.textContent = `${myScore}/${total}`;
+
+    // Find opponent in liveProgress (they're mid-session) or results (they finished)
+    const live = data.liveProgress || {};
+    const results = data.results || {};
+    let opp = null;
+    for (const [uid, v] of Object.entries(live)) {
+        if (uid !== myUid) { opp = { name: v.name, score: v.score, total: v.total || total, done: false }; break; }
+    }
+    if (!opp) {
+        for (const [uid, v] of Object.entries(results)) {
+            if (uid !== myUid) { opp = { name: v.name, score: v.score, total: v.total || total, done: true }; break; }
+        }
+    }
+
+    const oppBar  = document.getElementById('mp-opp-bar');
+    const oppName = document.getElementById('mp-opp-name');
+    const oppScoreEl = document.getElementById('mp-opp-score');
+
+    if (opp) {
+        const oppPct = Math.round((opp.score / opp.total) * 100);
+        if (oppBar) oppBar.style.width = oppPct + '%';
+        if (oppName) oppName.textContent = opp.name || 'Opponent';
+        if (oppScoreEl) oppScoreEl.textContent = `${opp.score}/${opp.total}${opp.done ? ' ✓' : ''}`;
+    } else {
+        if (oppName) oppName.textContent = 'Waiting…';
+        if (oppScoreEl) oppScoreEl.textContent = '—';
+        if (oppBar) oppBar.style.width = '0%';
+    }
+}
+
+// Push live score to Firestore during a challenge (fire-and-forget)
+function _saveLiveChallengeProgress() {
+    const user = auth.currentUser;
+    if (!user || !sessionState.challengeCode) return;
+    const name = user.displayName || 'Player';
+    updateDoc(doc(db, 'challenges', sessionState.challengeCode), {
+        [`liveProgress.${user.uid}`]: {
+            name,
+            score: sessionState.score,
+            total: sessionState.problemCount,
+            updatedAt: new Date().toISOString()
+        }
+    }).catch(() => {});
+    // Update local overlay immediately (optimistic)
+    _updateMultiplayerOverlay(_lastChallengeData || { liveProgress: {}, results: {} }, user.uid);
+}
 
 // Toast notification system
 function showToast(message, type = 'success') {
@@ -263,7 +472,19 @@ window.resetPassword = resetPassword;
 window.signInWithGoogle = signInWithGoogle;
 window.createChallenge = createChallenge;
 window.joinChallenge = joinChallenge;
+window.openChallengeCreator = openChallengeCreator;
+window.closeChallengeCreator = closeChallengeCreator;
+window.selectChallengeOption = selectChallengeOption;
+window.copyChallengeCode = copyChallengeCode;
+window.enterChallengeLobby = enterChallengeLobby;
+window.triggerCountdown = triggerCountdown;
+window.leaveLobby = leaveLobby;
+window._quickPlayChallenge = _quickPlayChallenge;
 window.switchLeaderboard = switchLeaderboard;
+window.showWorkedExample = showWorkedExample;
+window.revealNextStep = revealNextStep;
+window.closeWorkedExample = closeWorkedExample;
+window.showToast = showToast;
 
 // Friendly Firebase error messages
 function getFriendlyError(errorCode) {
@@ -283,12 +504,39 @@ function getFriendlyError(errorCode) {
     return errorMessages[errorCode] || 'Something went wrong. Please try again.';
 }
 
+// ---- Shared user-document creator (used by email signup + Google auth) ----
+async function createUserDocument(user) {
+    await setDoc(doc(db, 'users', user.uid), {
+        email: user.email || '',
+        displayName: user.displayName || '',
+        createdAt: new Date().toISOString(),
+        xp: 0,
+        weeklyXP: 0,
+        weekStart: getWeekStart(),
+        completedLessons: [],
+        badges: [],
+        stats: {
+            totalProblems: 0,
+            algebra: 0,
+            geometry: 0,
+            trigonometry: 0,
+            calculus: 0,
+            timedChallenges: 0
+        }
+    });
+}
+
 // Sign Up Function
 async function signup() {
+    const name = document.getElementById('signup-name').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const errorMessage = document.getElementById('error-message');
 
+    if (!name) {
+        errorMessage.textContent = 'Please enter your name.';
+        return;
+    }
     if (!email) {
         errorMessage.textContent = 'Please enter your email address.';
         return;
@@ -306,31 +554,9 @@ async function signup() {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         console.log('User created:', userCredential.user);
         errorMessage.textContent = '';
-        
-        const userId = userCredential.user.uid;
-        
-        await setDoc(doc(db, 'users', userId), {
-            email: email,
-            displayName: '',
-            bio: '',
-            profilePicture: '',
-            createdAt: new Date().toISOString(),
-            xp: 0,
-            weeklyXP: 0,
-            weekStart: getWeekStart(),
-            completedLessons: [],
-            badges: [],
-            stats: {
-                totalProblems: 0,
-                algebra: 0,
-                geometry: 0,
-                trigonometry: 0,
-                prealgebra: 0,
-                statistics: 0,
-                calculus: 0,
-                timedChallenges: 0
-            }
-        });
+        // Attach displayName so createUserDocument picks it up
+        userCredential.user.displayName = name;
+        await createUserDocument(userCredential.user);
     } catch (error) {
         errorMessage.textContent = getFriendlyError(error.code);
         console.error('Signup error:', error);
@@ -338,7 +564,7 @@ async function signup() {
 }
 
 // Login Function
-function login() {
+async function login() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
     const errorMessage = document.getElementById('error-message');
@@ -352,15 +578,14 @@ function login() {
         return;
     }
 
-    signInWithEmailAndPassword(auth, email, password)
-        .then((userCredential) => {
-            console.log('User logged in:', userCredential.user);
-            errorMessage.textContent = '';
-        })
-        .catch((error) => {
-            errorMessage.textContent = getFriendlyError(error.code);
-            console.error('Login error:', error);
-        });
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        console.log('User logged in:', userCredential.user);
+        errorMessage.textContent = '';
+    } catch (error) {
+        errorMessage.textContent = getFriendlyError(error.code);
+        console.error('Login error:', error);
+    }
 }
 
 // Logout Function
@@ -384,10 +609,10 @@ async function resetPassword() {
 
     try {
         await sendPasswordResetEmail(auth, email);
-        errorMessage.style.color = 'green';
+        errorMessage.className = 'error message-success';
         errorMessage.textContent = 'Password reset email sent! Check your inbox.';
     } catch (error) {
-        errorMessage.style.color = '';
+        errorMessage.className = 'error';
         errorMessage.textContent = getFriendlyError(error.code);
     }
 }
@@ -402,28 +627,7 @@ async function signInWithGoogle() {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
-            await setDoc(userRef, {
-                email: user.email,
-                displayName: user.displayName || '',
-                bio: '',
-                profilePicture: user.photoURL || '',
-                createdAt: new Date().toISOString(),
-                xp: 0,
-                weeklyXP: 0,
-                weekStart: getWeekStart(),
-                completedLessons: [],
-                badges: [],
-                stats: {
-                    totalProblems: 0,
-                    algebra: 0,
-                    geometry: 0,
-                    trigonometry: 0,
-                    prealgebra: 0,
-                    statistics: 0,
-                    calculus: 0,
-                    timedChallenges: 0
-                }
-            });
+            await createUserDocument(user);
         }
     } catch (error) {
         if (error.code !== 'auth/popup-closed-by-user') {
@@ -437,15 +641,11 @@ async function saveProfile() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const displayName = document.getElementById('profile-name').value;
-    const bio = document.getElementById('profile-bio').value;
-    const profilePicture = document.getElementById('profile-picture').value;
+    const displayName = document.getElementById('profile-name').value.trim();
 
     try {
         await updateDoc(doc(db, 'users', user.uid), {
             displayName: displayName,
-            bio: bio,
-            profilePicture: profilePicture,
             updatedAt: new Date().toISOString()
         });
 
@@ -461,30 +661,29 @@ function getWeekStart() {
     const now = new Date();
     const day = now.getDay();
     const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
+    const monday = new Date(now); // clone — don't mutate `now`
+    monday.setDate(diff);
     return monday.toISOString().split('T')[0];
 }
-// Award XP
+// Award XP — uses a transaction so concurrent calls can't corrupt weeklyXP
 async function awardXP(userId, amount) {
     const userRef = doc(db, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    const userData = userSnap.exists() ? userSnap.data() : {};
-
     const thisWeek = getWeekStart();
-    const isNewWeek = (userData.weekStart || '') !== thisWeek;
 
-    await updateDoc(userRef, {
-        xp: increment(amount),
-        weeklyXP: isNewWeek ? amount : increment(amount),
-        weekStart: thisWeek
+    // Single atomic read-modify-write: no more triple-read race condition
+    const updatedXP = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(userRef);
+        const data = snap.exists() ? snap.data() : {};
+        const currentXP   = (data.xp || 0) + amount;
+        const isNewWeek   = (data.weekStart || '') !== thisWeek;
+        const weeklyXP    = isNewWeek ? amount : (data.weeklyXP || 0) + amount;
+
+        tx.update(userRef, { xp: currentXP, weeklyXP, weekStart: thisWeek });
+        return currentXP;
     });
 
+    updateXPDisplay(updatedXP);
     await checkAndAwardBadges(userId);
-
-    const userSnap2 = await getDoc(userRef);
-    if (userSnap2.exists()) {
-        updateXPDisplay(userSnap2.data().xp);
-    }
 }
 
 // Check and Award Badges
@@ -528,9 +727,15 @@ async function loadProfile(userId) {
             const data = docSnap.data();
             
             document.getElementById('display-name').textContent = data.displayName || 'No name set';
-            document.getElementById('display-bio').textContent = data.bio || 'No bio set';
             document.getElementById('display-email').textContent = data.email;
             document.getElementById('user-name').textContent = data.displayName || 'Student';
+            
+            // Set avatar initial
+            const avatarEl = document.getElementById('profile-avatar');
+            if (avatarEl) {
+                const initials = (data.displayName || '?').charAt(0).toUpperCase();
+                avatarEl.textContent = initials;
+            }
             
             updateXPDisplay(data.xp || 0);
             
@@ -547,17 +752,7 @@ async function loadProfile(userId) {
             updatePathProgress(completedLessons);
             loadBadges(data.badges || [], data.stats || {}, data);
             
-            const profileImg = document.getElementById('profile-img');
-            if (data.profilePicture) {
-                profileImg.src = data.profilePicture;
-                profileImg.style.display = 'block';
-            } else {
-                profileImg.style.display = 'none';
-            }
-            
             document.getElementById('profile-name').value = data.displayName || '';
-            document.getElementById('profile-bio').value = data.bio || '';
-            document.getElementById('profile-picture').value = data.profilePicture || '';
         }
     } catch (error) {
         console.error('Error loading profile:', error);
@@ -579,7 +774,7 @@ function updateXPDisplay(xp) {
 
 // Update Path Progress
 function updatePathProgress(completedLessons) {
-    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'calculus'].forEach(topic => {
         const pathLessons = lessonPaths[topic].lessons;
         const completed = pathLessons.filter(lesson => 
             completedLessons.includes(`${topic}-${lesson.id}`)
@@ -698,6 +893,9 @@ async function openLessonFromPath(topic, lessonId) {
     let practiceGlobalIndex = 0;
     const seenLessonQuestions = new Set(); // Track all questions to prevent duplicates
 
+    // --- SVG Visual injection: get a diagram for this lesson if one is defined ---
+    const lessonVisualHtml = getLessonVisual(topic, lessonId) || '';
+
     // Pre-collect static question keys so generated ones don't duplicate them
     lesson.sections.forEach(section => {
         if (section.type === 'practice') {
@@ -707,9 +905,14 @@ async function openLessonFromPath(topic, lessonId) {
         }
     });
 
+    let firstTextSection = true;
     lesson.sections.forEach(section => {
         if (section.type === 'text') {
-            contentHtml += `<div class="lesson-section">${section.content}</div>`;
+            // Inject SVG visual after the first text block
+            const svgInject = (firstTextSection && lessonVisualHtml)
+                ? `<div class="lesson-visual-wrapper">${lessonVisualHtml}</div>` : '';
+            firstTextSection = false;
+            contentHtml += `<div class="lesson-section">${section.content}${svgInject}</div>`;
         } else if (section.type === 'example') {
             contentHtml += `
                 <div class="lesson-example">
@@ -738,8 +941,17 @@ async function openLessonFromPath(topic, lessonId) {
                 </div>
             `;
         } else if (section.type === 'practice') {
+            // Collect any generator IDs from adjacent generated_practice sections for the Example button
+            const nearbyGenIds = lesson.sections
+                .filter(s => s.type === 'generated_practice')
+                .flatMap(s => s.generators).join(',');
             contentHtml += `<div class="lesson-practice-block">`;
+            contentHtml += `<div class="practice-block-header">`;
             contentHtml += `<h4 class="practice-block-title">✏️ Check Your Understanding</h4>`;
+            if (nearbyGenIds) {
+                contentHtml += `<button class="we-trigger-btn" data-genids="${nearbyGenIds}" onclick="showWorkedExample(this)">📝 See Example</button>`;
+            }
+            contentHtml += `</div>`;
             section.problems.forEach((prob, i) => {
                 const gIdx = practiceGlobalIndex;
                 const labels = ['A', 'B', 'C', 'D'];
@@ -763,8 +975,12 @@ async function openLessonFromPath(topic, lessonId) {
             });
             contentHtml += `</div>`;
         } else if (section.type === 'generated_practice') {
+            const genIdList = section.generators.join(',');
             contentHtml += `<div class="lesson-practice-block generated">`;
+            contentHtml += `<div class="practice-block-header">`;
             contentHtml += `<h4 class="practice-block-title">✏️ Try It Yourself</h4>`;
+            contentHtml += `<button class="we-trigger-btn" data-genids="${genIdList}" onclick="showWorkedExample(this)">📝 See Example</button>`;
+            contentHtml += `</div>`;
             section.generators.forEach(genId => {
                 const gIdx = practiceGlobalIndex;
                 const labels = ['A', 'B', 'C', 'D'];
@@ -823,6 +1039,8 @@ async function openLessonFromPath(topic, lessonId) {
     }
 
     document.getElementById('lesson-content').innerHTML = contentHtml;
+    // Render KaTeX math in lesson content
+    renderMath(document.getElementById('lesson-content'));
 
     // Check if lesson is already completed and update button
     const completeLessonBtn = document.getElementById('complete-lesson-btn');
@@ -1025,6 +1243,7 @@ async function loadLeaderboard(tab) {
             
             const itemEl = document.createElement('div');
             itemEl.className = 'leaderboard-item';
+            itemEl.setAttribute('role', 'listitem');
             if (rank <= 3) itemEl.classList.add('top-' + rank);
             if (currentUser && docSnap.id === currentUser.uid) itemEl.classList.add('lb-you');
             
@@ -1034,7 +1253,7 @@ async function loadLeaderboard(tab) {
             itemEl.innerHTML = `
                 <div class="rank">${rankIcon}</div>
                 <div class="user-info">
-                    <div class="user-name">${data.displayName || 'Anonymous'}${youBadge}</div>
+                    <div class="user-name">${escapeHtml(data.displayName) || 'Anonymous'}${youBadge}</div>
                     <div class="user-stats">Level ${level} • ${data.xp || 0} total XP</div>
                 </div>
                 <div class="user-badges">${xpValue} XP</div>
@@ -1055,7 +1274,9 @@ async function loadLeaderboard(tab) {
 function switchLeaderboard(tab) {
     currentLeaderboardTab = tab;
     document.getElementById('lb-tab-weekly').classList.toggle('active', tab === 'weekly');
+    document.getElementById('lb-tab-weekly').setAttribute('aria-selected', tab === 'weekly' ? 'true' : 'false');
     document.getElementById('lb-tab-alltime').classList.toggle('active', tab === 'alltime');
+    document.getElementById('lb-tab-alltime').setAttribute('aria-selected', tab === 'alltime' ? 'true' : 'false');
     document.getElementById('lb-subtitle').textContent = tab === 'weekly' ? 'Top students this week' : 'Top students of all time';
     document.getElementById('lb-reset-timer').classList.toggle('hidden', tab !== 'weekly');
     loadLeaderboard(tab);
@@ -1150,9 +1371,32 @@ function launchConfetti() {
     animate();
 }
 
+
 // ============================================================
-// FRIEND CHALLENGES
+// FRIEND CHALLENGES (seed-based — both players generate identical problems locally)
 // ============================================================
+
+// Seeded PRNG (mulberry32) — given the same seed, produces the same sequence on every client
+function _seededRng(seed) {
+    let s = seed | 0;
+    return function () {
+        s = (s + 0x6D2B79F5) | 0;
+        let t = Math.imul(s ^ (s >>> 15), 1 | s);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+// Seeded shuffle — deterministic given the same seed
+function _seededShuffle(arr, rng) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(rng() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
 function generateChallengeCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = '';
@@ -1160,178 +1404,483 @@ function generateChallengeCode() {
     return code;
 }
 
+// Every generator ID organised by topic — used for challenges (no lesson-completion filter)
+const _challengeGensByTopic = {
+    algebra: ['eval-expression','identify-parts','solve-linear','solve-linear-subtract','solve-inequality','inequality-flip','find-slope','identify-slope-intercept','solve-system','find-discriminant','solve-quadratic-simple','factor-trinomial','factor-diff-squares','exponent-product','exponent-evaluate','evaluate-function','evaluate-function-squared','simplify-rational','find-excluded-value','expression-vs-equation','simplify-like-terms','check-solution','y-intercept-from-eq','substitution-system','count-solutions','gcf-factor','exponent-power-rule','zero-neg-exponent','domain-check'],
+    geometry: ['geo-basic-definitions','supplementary-angle','complementary-angle','triangle-missing-angle','quad-missing-angle','circle-area','circle-circumference','rectangle-area','triangle-area','find-hypotenuse','find-leg','scale-factor','cube-volume','cube-surface-area','translate-point','identify-transformation','classify-triangle-sides','classify-angle','identify-quadrilateral','diameter-radius','perimeter-rectangle','trapezoid-area','is-right-triangle','congruent-vs-similar','cylinder-volume','sphere-volume','reflection-point'],
+    trigonometry: ['trig-ratio-from-sides','trig-find-side','special-45-45-90','special-30-60-90','unit-circle-coords','deg-to-rad','rad-to-deg','trig-amplitude','trig-period','pythagorean-identity','inverse-trig-eval','law-of-sines-calc','law-of-cosines-calc','sohcahtoa-which-func','which-trig-function','quadrant-id','inverse-trig-range','reciprocal-identity','trig-double-angle','law-choice'],
+    calculus: ['calc-limit-eval','calc-limit-concept','calc-derivative-def','calc-power-rule','calc-diff-rules','calc-chain-rule','calc-deriv-app','calc-increasing-decreasing','calc-antiderivative','calc-integral-rules','calc-ftc','calc-ftc-concept','calc-u-sub','calc-area-between','calc-integral-app']
+};
+
+// ---------- Challenge creation state ----------
+const challengeCreatorState = { topic: 'mixed', difficulty: 'medium', count: 10 };
+let _lobbyUnsubscribe = null;
+let _lobbyCode = null;
+let _countdownTimer = null;
+let _challengeLaunched = false;
+
+function selectChallengeOption(btn, field) {
+    btn.parentElement.querySelectorAll('.fc-chip').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    challengeCreatorState[field] = field === 'count' ? parseInt(btn.dataset.value) : btn.dataset.value;
+}
+function openChallengeCreator() {
+    document.getElementById('fc-actions-default').classList.add('hidden');
+    document.getElementById('fc-creator').classList.remove('hidden');
+}
+function closeChallengeCreator() {
+    document.getElementById('fc-creator').classList.add('hidden');
+    document.getElementById('fc-actions-default').classList.remove('hidden');
+}
+function copyChallengeCode() {
+    navigator.clipboard.writeText(_lobbyCode || '');
+    showToast('Code copied!');
+}
+
+// ---------- Generate problems from a shared seed (deterministic) ----------
+// Both clients call this with the same seed+topic+count and get identical problems.
+// We temporarily override Math.random so generators.js produces the same output.
+function _generateSeededProblems(seed, topic, count) {
+    const rng = _seededRng(seed);
+
+    // Override Math.random with seeded version
+    const origRandom = Math.random;
+    Math.random = rng;
+
+    let genIds = [];
+    if (topic === 'mixed') {
+        const allTopics = Object.keys(_challengeGensByTopic);
+        for (const t of _seededShuffle(allTopics, rng)) {
+            genIds.push(..._seededShuffle(_challengeGensByTopic[t], rng).slice(0, Math.ceil(count / allTopics.length) + 1));
+        }
+    } else {
+        genIds = _seededShuffle([...(_challengeGensByTopic[topic] || [])], rng);
+    }
+
+    genIds = genIds.filter(gId => typeof generators !== 'undefined' && generators[gId]);
+
+    const problems = [];
+    const seen = new Set();
+    for (let i = 0; problems.length < count && i < count * 5; i++) {
+        const gId = genIds[i % genIds.length];
+        try {
+            const p = generators[gId]();
+            if (p && p.choices && p.correctIndex >= 0) {
+                const key = p.question.replace(/<[^>]+>/g, '').trim();
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    problems.push({
+                        question: p.question,
+                        correctAnswer: p.choices[p.correctIndex],
+                        wrongAnswers: p.choices.filter((_, j) => j !== p.correctIndex),
+                        explanation: p.explanation || ''
+                    });
+                }
+            }
+        } catch (e) { /* skip */ }
+    }
+
+    // Restore real Math.random
+    Math.random = origRandom;
+    return problems;
+}
+
+// ---------- Create challenge ----------
 async function createChallenge() {
     const user = auth.currentUser;
     if (!user) { showToast('Please log in first', 'error'); return; }
-    
+
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    const displayName = userSnap.exists() ? (userSnap.data().displayName || 'Anonymous') : 'Anonymous';
-    
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const displayName = userData.displayName || 'Anonymous';
+
+    const { topic, difficulty, count } = challengeCreatorState;
+
+    // Generate a random seed (32-bit integer)
+    const seed = Math.floor(Math.random() * 2147483647) + 1;
+
+    // Verify the seed produces enough problems before saving
+    const testProblems = _generateSeededProblems(seed, topic, count);
+    if (testProblems.length === 0) {
+        showToast('Could not generate problems for that topic. Try "Mixed".', 'error');
+        return;
+    }
+
     const code = generateChallengeCode();
-    const challengeRef = doc(db, 'challenges', code);
-    
+    const topicLabels = { mixed: 'Mixed', algebra: 'Algebra', geometry: 'Geometry', trigonometry: 'Trigonometry', calculus: 'Calculus' };
+
     try {
-        await setDoc(challengeRef, {
+        await setDoc(doc(db, 'challenges', code), {
             code,
             creatorId: user.uid,
             creatorName: displayName,
             createdAt: new Date().toISOString(),
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            status: 'open',
-            topic: 'mixed',
-            problemCount: 10,
-            results: {}
+            status: 'waiting',
+            topic,
+            topicLabel: topicLabels[topic] || topic,
+            difficulty,
+            problemCount: testProblems.length,
+            seed,                                   // shared seed — both clients regenerate identical problems
+            participants: [user.uid],
+            playerNames: { [user.uid]: displayName },
+            results: {},
+            liveProgress: {},
+            startAt: null
         });
-        
-        const statusEl = document.getElementById('fc-status');
-        statusEl.classList.remove('hidden');
-        statusEl.innerHTML = `
-            <div class="fc-code-display">
-                <span class="fc-code-label">Your challenge code:</span>
-                <span class="fc-code-value">${code}</span>
-                <button class="fc-copy-btn" onclick="navigator.clipboard.writeText('${code}'); showToast('Code copied!')">📋 Copy</button>
-            </div>
-            <p class="fc-code-hint">Share this code with a friend. Challenge expires in 24 hours.</p>
-        `;
-        
+        closeChallengeCreator();
+        enterChallengeLobby(code, true);
         loadActiveChallenges();
     } catch (error) {
         console.error('Error creating challenge:', error);
-        showToast('Error creating challenge', 'error');
+        if (error.code === 'permission-denied') {
+            showToast('Permission denied — update Firestore rules for the "challenges" collection', 'error');
+        } else {
+            showToast(`Error: ${error.message || error.code || 'unknown'}`, 'error');
+        }
     }
 }
 
+// ---------- Join challenge ----------
 async function joinChallenge() {
     const user = auth.currentUser;
     if (!user) { showToast('Please log in first', 'error'); return; }
-    
+
     const code = document.getElementById('fc-join-code').value.trim().toUpperCase();
-    if (!code || code.length < 4) {
-        showToast('Enter a valid challenge code', 'error');
-        return;
-    }
-    
+    if (!code || code.length !== 6) { showToast('Enter a valid 6-character challenge code', 'error'); return; }
+
     try {
         const challengeRef = doc(db, 'challenges', code);
-        const challengeSnap = await getDoc(challengeRef);
-        
-        if (!challengeSnap.exists()) {
-            showToast('Challenge not found', 'error');
-            return;
-        }
-        
-        const data = challengeSnap.data();
-        
-        if (new Date(data.expiresAt) < new Date()) {
-            showToast('This challenge has expired', 'error');
-            return;
-        }
-        
+        const snap = await getDoc(challengeRef);
+        if (!snap.exists()) { showToast('Challenge not found', 'error'); return; }
+
+        const data = snap.data();
+        if (new Date(data.expiresAt) < new Date()) { showToast('This challenge has expired', 'error'); return; }
+        if (data.results && data.results[user.uid]) { showToast('You already completed this challenge!', 'info'); return; }
+
         if (data.creatorId === user.uid) {
-            showToast("You can't join your own challenge!", 'error');
+            document.getElementById('fc-join-code').value = '';
+            enterChallengeLobby(code, true);
             return;
         }
-        
-        // Start a timed 10-problem mixed session
+
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
-        const completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
-        
-        // Store challenge context for endSession to record the result
-        sessionState.challengeCode = code;
-        sessionState.challengeData = data;
-        
-        // Generate problems from all completed topics
-        const allTopics = ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'];
-        let problems = [];
-        for (const t of shuffle(allTopics)) {
-            if (problems.length >= 10) break;
-            const tp = generateProblemsFromGenerators(t, 3, completedLessons);
-            problems.push(...tp);
-        }
-        problems = shuffle(problems).slice(0, 10);
-        
-        if (problems.length === 0) {
-            showToast('Complete some lessons first to join challenges!', 'error');
-            return;
-        }
-        
-        practiceState.topic = 'mixed';
-        launchSession(problems, `⚔️ Challenge vs ${data.creatorName}`, '', 'timed', problems.length);
-        showToast(`Challenge accepted! Beat ${data.creatorName}!`);
-        
+        const displayName = userSnap.exists() ? (userSnap.data().displayName || 'Anonymous') : 'Anonymous';
+
+        await updateDoc(challengeRef, {
+            participants: arrayUnion(user.uid),
+            [`playerNames.${user.uid}`]: displayName,
+            status: 'ready'
+        });
+
+        document.getElementById('fc-join-code').value = '';
+        enterChallengeLobby(code, false);
+        showToast(`Joined ${escapeHtml(data.creatorName)}'s challenge!`);
     } catch (error) {
         console.error('Error joining challenge:', error);
-        showToast('Error joining challenge', 'error');
+        showToast(`Error: ${error.message || error.code || 'unknown'}`, 'error');
     }
 }
 
+// ---------- Lobby ----------
+function enterChallengeLobby(code, isCreator) {
+    _lobbyCode = code;
+    _challengeLaunched = false;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    document.getElementById('fc-actions-default').classList.add('hidden');
+    document.getElementById('fc-creator').classList.add('hidden');
+    document.getElementById('fc-lobby').classList.remove('hidden');
+    document.getElementById('fc-lobby-code').textContent = code;
+    document.getElementById('fc-lobby-status').textContent = isCreator
+        ? 'Share the code — waiting for a friend to join...'
+        : 'Waiting for host to start...';
+
+    if (_lobbyUnsubscribe) _lobbyUnsubscribe();
+    _lobbyUnsubscribe = onSnapshot(doc(db, 'challenges', code), snap => {
+        if (!snap.exists()) { leaveLobby(); return; }
+        _updateLobbyUI(snap.data(), user.uid);
+    });
+}
+
+function _updateLobbyUI(data, myUid) {
+    if (_challengeLaunched) return;
+
+    const topicLabels = { mixed:'🎲 Mixed', algebra:'📐 Algebra', geometry:'📏 Geometry', trigonometry:'📊 Trig', calculus:'♾️ Calculus' };
+    const diffLabels  = { easy:'🟢 Easy', medium:'🟡 Medium', hard:'🔴 Hard' };
+
+    document.getElementById('fc-lobby-topic').textContent = topicLabels[data.topic] || data.topic;
+    document.getElementById('fc-lobby-diff').textContent  = diffLabels[data.difficulty] || data.difficulty;
+    document.getElementById('fc-lobby-count').textContent  = `${data.problemCount} problems`;
+
+    const names = data.playerNames || {};
+    const participants = data.participants || [];
+
+    const p1El = document.getElementById('fc-lobby-p1');
+    const p1Name = names[data.creatorId] || 'Creator';
+    p1El.querySelector('.fc-lobby-avatar').textContent = p1Name.charAt(0).toUpperCase();
+    p1El.querySelector('.fc-lobby-pname').textContent  = p1Name + (data.creatorId === myUid ? ' (You)' : '');
+    p1El.classList.add('fc-lobby-player-joined');
+
+    const p2El = document.getElementById('fc-lobby-p2');
+    const challengerUid = participants.find(uid => uid !== data.creatorId);
+    if (challengerUid) {
+        const p2Name = names[challengerUid] || 'Opponent';
+        p2El.querySelector('.fc-lobby-avatar').textContent = p2Name.charAt(0).toUpperCase();
+        p2El.querySelector('.fc-lobby-pname').textContent  = p2Name + (challengerUid === myUid ? ' (You)' : '');
+        p2El.classList.add('fc-lobby-player-joined');
+    } else {
+        p2El.querySelector('.fc-lobby-avatar').textContent = '?';
+        p2El.querySelector('.fc-lobby-pname').textContent  = 'Waiting...';
+        p2El.classList.remove('fc-lobby-player-joined');
+    }
+
+    const statusEl = document.getElementById('fc-lobby-status');
+
+    if (data.startAt) {
+        _runCountdown(new Date(data.startAt).getTime(), data);
+    } else if (participants.length >= 2) {
+        if (data.creatorId === myUid) {
+            statusEl.innerHTML = 'Both players ready! <button class="fc-btn fc-start-countdown" onclick="triggerCountdown()">🚀 Start!</button>';
+        } else {
+            statusEl.textContent = 'Both players ready — waiting for host to start...';
+        }
+    } else {
+        statusEl.textContent = data.creatorId === myUid
+            ? 'Share the code — waiting for a friend to join...'
+            : 'Waiting in lobby...';
+    }
+}
+
+async function triggerCountdown() {
+    if (!_lobbyCode) return;
+    try {
+        await updateDoc(doc(db, 'challenges', _lobbyCode), {
+            startAt: new Date(Date.now() + 4000).toISOString(),
+            status: 'countdown'
+        });
+    } catch (e) {
+        console.error('Error starting countdown:', e);
+        showToast('Error starting countdown', 'error');
+    }
+}
+
+function _runCountdown(startTime, challengeData) {
+    if (_challengeLaunched) return;
+
+    const countdownEl = document.getElementById('fc-lobby-countdown');
+    const numberEl    = document.getElementById('fc-countdown-number');
+    const statusEl    = document.getElementById('fc-lobby-status');
+    countdownEl.classList.remove('hidden');
+    statusEl.textContent = 'Get ready!';
+
+    // Only one timer at a time
+    if (_countdownTimer) clearInterval(_countdownTimer);
+    _countdownTimer = setInterval(() => {
+        if (_challengeLaunched) { clearInterval(_countdownTimer); _countdownTimer = null; return; }
+        const diff = Math.ceil((startTime - Date.now()) / 1000);
+        if (diff > 0) {
+            numberEl.textContent = diff;
+            numberEl.classList.remove('fc-countdown-animate');
+            void numberEl.offsetWidth;
+            numberEl.classList.add('fc-countdown-animate');
+        } else {
+            clearInterval(_countdownTimer);
+            _countdownTimer = null;
+            numberEl.textContent = 'GO!';
+            setTimeout(() => {
+                if (!_challengeLaunched) _launchChallengeSession(challengeData);
+            }, 400);
+        }
+    }, 200);
+}
+
+function _launchChallengeSession(data) {
+    if (_challengeLaunched) return;
+    _challengeLaunched = true;
+
+    // Capture lobby code before cleanup
+    const challengeCode = _lobbyCode;
+
+    // Kill lobby listener + UI
+    if (_lobbyUnsubscribe) { _lobbyUnsubscribe(); _lobbyUnsubscribe = null; }
+    if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+    document.getElementById('fc-lobby').classList.add('hidden');
+    document.getElementById('fc-lobby-countdown').classList.add('hidden');
+    document.getElementById('fc-actions-default').classList.remove('hidden');
+    _lobbyCode = null;
+
+    // Mark active
+    if (challengeCode) {
+        updateDoc(doc(db, 'challenges', challengeCode), { status: 'active' }).catch(() => {});
+    }
+
+    const user = auth.currentUser;
+    if (!user) { _challengeLaunched = false; return; }
+
+    // Generate problems locally from the shared seed (deterministic — both players get the same set)
+    let problems = [];
+    if (data.seed && data.topic && data.problemCount) {
+        problems = _generateSeededProblems(data.seed, data.topic, data.problemCount);
+    }
+
+    if (problems.length === 0) {
+        showToast('Could not generate challenge problems. The challenge may need to be recreated.', 'error');
+        _challengeLaunched = false;
+        return;
+    }
+
+    const diffLabels = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+    const topicLabel = data.topicLabel || data.topic || 'Challenge';
+    const names = data.playerNames || {};
+    const opponentName = Object.entries(names).find(([uid]) => uid !== user.uid)?.[1] || 'Friend';
+
+    practiceState.topic = data.topic || 'mixed';
+    launchSession(
+        problems,
+        `⚔️ ${topicLabel} vs ${escapeHtml(opponentName)}`,
+        diffLabels[data.difficulty] || '',
+        'timed',
+        problems.length,
+        challengeCode,
+        data
+    );
+}
+
+function leaveLobby() {
+    if (_lobbyUnsubscribe) { _lobbyUnsubscribe(); _lobbyUnsubscribe = null; }
+    if (_countdownTimer) { clearInterval(_countdownTimer); _countdownTimer = null; }
+    _lobbyCode = null;
+    _challengeLaunched = false;
+    document.getElementById('fc-lobby').classList.add('hidden');
+    document.getElementById('fc-lobby-countdown').classList.add('hidden');
+    document.getElementById('fc-actions-default').classList.remove('hidden');
+}
+
+// ---------- Record result ----------
 async function recordChallengeResult(code, score, total) {
     const user = auth.currentUser;
     if (!user) return;
-    
+
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
     const displayName = userSnap.exists() ? (userSnap.data().displayName || 'Anonymous') : 'Anonymous';
-    
+
     try {
         const challengeRef = doc(db, 'challenges', code);
         await updateDoc(challengeRef, {
             [`results.${user.uid}`]: {
-                name: displayName,
-                score,
-                total,
+                name: displayName, score, total,
                 accuracy: Math.round((score / total) * 100),
                 completedAt: new Date().toISOString()
-            }
+            },
+            participants: arrayUnion(user.uid)
         });
+
+        const updatedSnap = await getDoc(challengeRef);
+        if (updatedSnap.exists()) {
+            const updatedResults = Object.values(updatedSnap.data().results || {});
+            if (updatedResults.length >= 2) {
+                await updateDoc(challengeRef, { status: 'completed' }).catch(() => {});
+                const sorted = [...updatedResults].sort((a, b) => b.score - a.score);
+                const myResult = updatedResults.find(r => r.name === displayName);
+                const topScore = sorted[0].score;
+                if (myResult && myResult.score === topScore && sorted.filter(r => r.score === topScore).length === 1) {
+                    showToast(`🏆 You won the challenge! (${score}/${total})`, 'success');
+                } else if (myResult && myResult.score === topScore) {
+                    showToast(`🤝 It's a tie! (${score}/${total})`, 'success');
+                } else {
+                    showToast(`${sorted[0].name} wins this round! Better luck next time.`, 'info');
+                }
+                if (document.getElementById('leaderboard-view') && !document.getElementById('leaderboard-view').classList.contains('hidden')) {
+                    loadActiveChallenges();
+                }
+            } else {
+                showToast(`Result saved! Waiting for your opponent to finish.`, 'success');
+            }
+        }
     } catch (error) {
         console.error('Error recording challenge result:', error);
     }
 }
 
+// ---------- Active challenges list ----------
 async function loadActiveChallenges() {
     const user = auth.currentUser;
     if (!user) return;
-    
     const listEl = document.getElementById('fc-active-list');
     if (!listEl) return;
-    
+
     try {
-        // Query challenges created by the user
-        const q = query(collection(db, 'challenges'), orderBy('createdAt', 'desc'), limit(5));
+        const q = query(
+            collection(db, 'challenges'),
+            where('participants', 'array-contains', user.uid),
+            orderBy('createdAt', 'desc'),
+            limit(8)
+        );
         const snap = await getDocs(q);
-        
         const relevant = [];
-        snap.forEach(docSnap => {
-            const data = docSnap.data();
-            if (data.creatorId === user.uid || (data.results && data.results[user.uid])) {
-                if (new Date(data.expiresAt) > new Date()) {
-                    relevant.push(data);
-                }
-            }
-        });
-        
-        if (relevant.length === 0) {
-            listEl.innerHTML = '';
-            return;
-        }
-        
+        snap.forEach(d => { const dd = d.data(); if (new Date(dd.expiresAt) > new Date()) relevant.push(dd); });
+
+        if (relevant.length === 0) { listEl.innerHTML = ''; return; }
+
+        const topicIcons = { mixed:'🎲', algebra:'📐', geometry:'📏', trigonometry:'📊', calculus:'♾️' };
+
         listEl.innerHTML = '<h4 class="fc-active-title">Your Challenges</h4>' +
             relevant.map(ch => {
-                const resultEntries = Object.entries(ch.results || {});
-                const resultsHtml = resultEntries.length > 0
-                    ? resultEntries.map(([uid, r]) => `<span class="fc-result">${r.name}: ${r.score}/${r.total} (${r.accuracy}%)</span>`).join(' vs ')
-                    : '<span class="fc-waiting">Waiting for challenger…</span>';
-                return `<div class="fc-active-item">
-                    <span class="fc-active-code">${ch.code}</span>
-                    <span class="fc-active-results">${resultsHtml}</span>
-                </div>`;
+                const resultEntries = Object.values(ch.results || {});
+                const iAmCreator = ch.creatorId === user.uid;
+                const icon = topicIcons[ch.topic] || '📝';
+
+                let statusBadge = '';
+                if (ch.status === 'completed' || resultEntries.length >= 2) statusBadge = '<span class="fc-badge fc-badge-done">Complete</span>';
+                else if (ch.status === 'waiting') statusBadge = '<span class="fc-badge fc-badge-waiting">Waiting</span>';
+                else statusBadge = '<span class="fc-badge fc-badge-live">Live</span>';
+
+                let resultsHtml;
+                if (resultEntries.length === 0) {
+                    resultsHtml = '<span class="fc-waiting">No scores yet</span>';
+                } else if (resultEntries.length === 1) {
+                    const r = resultEntries[0];
+                    resultsHtml = `<span class="fc-result-single">${escapeHtml(r.name)}: ${r.score}/${r.total} (${r.accuracy}%)</span><span class="fc-waiting"> — waiting</span>`;
+                } else {
+                    const sorted = [...resultEntries].sort((a, b) => b.score - a.score);
+                    const top = sorted[0].score;
+                    const tie = sorted.filter(r => r.score === top).length > 1;
+                    resultsHtml = sorted.map((r, i) => {
+                        const w = !tie && i === 0, t = tie && r.score === top;
+                        return `<span class="fc-result ${w?'fc-winner':''} ${t?'fc-tied':''}">${w?'🏆 ':t?'🤝 ':''}${escapeHtml(r.name)}: ${r.score}/${r.total} (${r.accuracy}%)</span>`;
+                    }).join('<span class="fc-vs"> vs </span>');
+                }
+
+                const myResult = ch.results && ch.results[user.uid];
+                const canPlay = !myResult && new Date(ch.expiresAt) > new Date();
+                let actionBtn = '';
+                if (canPlay && ch.status === 'waiting' && iAmCreator)
+                    actionBtn = `<button class="fc-btn fc-play-mini" onclick="enterChallengeLobby('${ch.code}', true)">🔗 Lobby</button>`;
+                else if (canPlay && ['active','ready','countdown'].includes(ch.status))
+                    actionBtn = `<button class="fc-btn fc-play-mini" onclick="_quickPlayChallenge('${ch.code}')">▶ Play</button>`;
+
+                return `<div class="fc-active-item"><div class="fc-active-header"><span class="fc-active-icon">${icon}</span><span class="fc-active-code">${ch.code}</span><span class="fc-active-role">${iAmCreator ? 'Created by you' : `by ${escapeHtml(ch.creatorName)}`}</span>${statusBadge}${actionBtn}</div><div class="fc-active-results">${resultsHtml}</div></div>`;
             }).join('');
     } catch (error) {
         console.error('Error loading challenges:', error);
     }
+}
+
+async function _quickPlayChallenge(code) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const snap = await getDoc(doc(db, 'challenges', code));
+    if (!snap.exists()) { showToast('Challenge not found', 'error'); return; }
+    const data = snap.data();
+    if (data.results && data.results[user.uid]) { showToast('You already played!', 'info'); return; }
+    _lobbyCode = code;
+    _challengeLaunched = false;
+    _launchChallengeSession(data);
 }
 
 // Toggle Edit Mode
@@ -1360,7 +1909,9 @@ function showLearnView() {
     document.getElementById('learn-view').classList.remove('hidden');
     document.getElementById('practice-view').classList.add('hidden');
     document.getElementById('learn-toggle').classList.add('active');
+    document.getElementById('learn-toggle').setAttribute('aria-selected', 'true');
     document.getElementById('practice-toggle').classList.remove('active');
+    document.getElementById('practice-toggle').setAttribute('aria-selected', 'false');
 }
 
 // Show Practice View
@@ -1368,7 +1919,9 @@ function showPracticeView() {
     document.getElementById('learn-view').classList.add('hidden');
     document.getElementById('practice-view').classList.remove('hidden');
     document.getElementById('learn-toggle').classList.remove('active');
+    document.getElementById('learn-toggle').setAttribute('aria-selected', 'false');
     document.getElementById('practice-toggle').classList.add('active');
+    document.getElementById('practice-toggle').setAttribute('aria-selected', 'true');
     updateQuickPracticeBtn();
     updateRetryMissedBtn();
     updateMasteryRings();
@@ -1408,8 +1961,39 @@ let sessionState = {
     problemCount: 10
 };
 
-// Missed questions queue (persists across sessions in memory)
+// Daily progress (resets each day — persisted in localStorage)
+let dailyProgress = { date: new Date().toDateString(), solved: 0 };
+
+// Missed questions queue (persists across page loads via localStorage)
 let missedQueue = [];
+
+// ============================================================
+// PERSISTENCE HELPERS  (missedQueue + dailyProgress)
+// ============================================================
+function loadPersistedState() {
+    try {
+        const mq = localStorage.getItem('ibis_missedQueue');
+        if (mq) missedQueue = JSON.parse(mq);
+    } catch(e) { missedQueue = []; }
+
+    try {
+        const dp = localStorage.getItem('ibis_dailyProgress');
+        if (dp) {
+            const parsed = JSON.parse(dp);
+            const today = new Date().toDateString();
+            // Discard saved state if it's from a previous day
+            dailyProgress = parsed.date === today ? parsed : { date: today, solved: 0 };
+        }
+    } catch(e) { /* use default */ }
+}
+
+function saveMissedQueue() {
+    try { localStorage.setItem('ibis_missedQueue', JSON.stringify(missedQueue)); } catch(e) {}
+}
+
+function saveDailyProgress() {
+    try { localStorage.setItem('ibis_dailyProgress', JSON.stringify(dailyProgress)); } catch(e) {}
+}
 
 // ============================================================
 // ADAPTIVE DIFFICULTY
@@ -1429,7 +2013,7 @@ function updateAdaptiveLevel() {
 // SPACED REPETITION
 // ============================================================
 async function getSpacedRepetitionProblems(currentTopic, count, completedLessons) {
-    const allTopics = ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'];
+    const allTopics = ['algebra', 'geometry', 'trigonometry', 'calculus'];
     const otherTopics = allTopics.filter(t => t !== currentTopic);
     const topicsWithLessons = otherTopics.filter(t =>
         completedLessons.some(l => l.startsWith(t + '-'))
@@ -1457,9 +2041,6 @@ async function getSpacedRepetitionProblems(currentTopic, count, completedLessons
     return reviewProblems.slice(0, reviewCount);
 }
 
-// Daily progress (resets each day)
-let dailyProgress = { date: new Date().toDateString(), solved: 0 };
-
 // --- Utility helpers (shared with lesson practice) ---
 function randInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -1479,7 +2060,7 @@ function pickRandom(arr) {
 // Build subtopic map: topic → [ { id, title, gens: [...] } ]
 function getSubtopicMap() {
     const map = {};
-    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'calculus'].forEach(topic => {
         map[topic] = lessonPaths[topic].lessons.map(lesson => {
             const gens = [];
             lesson.sections.forEach(s => {
@@ -1516,6 +2097,7 @@ function incrementDailyGoal(count) {
     if (dailyProgress.date !== today) dailyProgress = { date: today, solved: 0 };
     dailyProgress.solved += count;
     updateDailyGoal();
+    saveDailyProgress();
 }
 
 // ============================================================
@@ -1529,7 +2111,7 @@ async function updateMasteryRings() {
     if (!userSnap.exists()) return;
     const stats = userSnap.data().stats || {};
 
-    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'calculus'].forEach(topic => {
         const correct = stats[topic] || 0;
         const total = stats[`${topic}Total`] || 0;
         const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -1567,6 +2149,7 @@ function addToMissedQueue(problem) {
     if (!missedQueue.find(p => p.question === problem.question)) {
         missedQueue.push({ ...problem });
         if (missedQueue.length > 50) missedQueue.shift(); // cap at 50
+        saveMissedQueue();
     }
 }
 
@@ -1708,7 +2291,7 @@ async function startQuickPractice() {
 
     // Gather all generators from completed lessons
     const allGenIds = [];
-    ['algebra', 'geometry', 'trigonometry', 'prealgebra', 'statistics', 'calculus'].forEach(topic => {
+    ['algebra', 'geometry', 'trigonometry', 'calculus'].forEach(topic => {
         lessonPaths[topic].lessons.forEach(lesson => {
             if (completed.includes(`${topic}-${lesson.id}`)) {
                 lesson.sections.forEach(s => {
@@ -1911,7 +2494,7 @@ async function startPractice() {
     launchSession(problems, topicLabel, '', mode, problems.length);
 }
 
-function launchSession(problems, topicLabel, diffLabel, mode, total) {
+function launchSession(problems, topicLabel, diffLabel, mode, total, challengeCode = null, challengeData = null) {
     sessionState = {
         problems,
         currentIndex: 0,
@@ -1925,7 +2508,10 @@ function launchSession(problems, topicLabel, diffLabel, mode, total) {
         answered: false,
         streak: 0,
         bestStreak: 0,
-        problemCount: total
+        problemCount: total,
+        // Challenge context — carried through the whole session so endSession can save the result
+        challengeCode,
+        challengeData
     };
 
     // Setup header
@@ -1950,6 +2536,13 @@ function launchSession(problems, topicLabel, diffLabel, mode, total) {
     hideAllViews();
     document.getElementById('practice-session').classList.remove('hidden');
     showProblem(0);
+
+    // Start real-time multiplayer listener for friend challenges
+    if (challengeCode) {
+        startChallengeListener(challengeCode);
+    } else {
+        stopChallengeListener();
+    }
 }
 
 function showProblem(index) {
@@ -2022,6 +2615,7 @@ function selectChoice(btn) {
         // Remove from missed queue if present
         const q = sessionState.problems[sessionState.currentIndex].question;
         missedQueue = missedQueue.filter(p => p.question !== q);
+        saveMissedQueue();
     } else {
         btn.classList.add('incorrect');
         sessionState.streak = 0;
@@ -2036,6 +2630,9 @@ function selectChoice(btn) {
     document.getElementById('session-score').textContent = sessionState.score;
     showFeedback(isCorrect, false);
     document.getElementById('next-problem-btn').classList.remove('hidden');
+
+    // Save live progress for real-time multiplayer overlay
+    if (sessionState.challengeCode) _saveLiveChallengeProgress();
 }
 
 function updateStreakDisplay() {
@@ -2136,6 +2733,9 @@ async function endSession() {
         clearInterval(sessionState.timerInterval);
         sessionState.timerInterval = null;
     }
+
+    // Stop real-time multiplayer listener
+    stopChallengeListener();
 
     const { score, answers, topic, mode, bestStreak, problemCount } = sessionState;
     const total = problemCount;
@@ -2249,6 +2849,7 @@ function quitSession() {
         clearInterval(sessionState.timerInterval);
         sessionState.timerInterval = null;
     }
+    stopChallengeListener();
     hideAllViews();
     document.getElementById('main-view').classList.remove('hidden');
     showPracticeView();
@@ -2785,6 +3386,7 @@ onAuthStateChanged(auth, (user) => {
     if (user) {
         authContainer.classList.add('hidden');
         dashboard.classList.remove('hidden');
+        loadPersistedState(); // restore missedQueue + dailyProgress from localStorage
         loadProfile(user.uid);
     } else {
         authContainer.classList.remove('hidden');
