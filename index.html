@@ -5,7 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ibis Academy - Master Math Your Way</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='https://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦩</text></svg>">
+    <!-- KaTeX for beautiful math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+        onload="window._katexLoaded = true; if(window._pendingKaTeX) window._pendingKaTeX.forEach(el => _renderMathInEl(el))"></script>
+    <!-- Reusable Google icon — cloned by JS into each sign-in button -->
+    <template id="google-icon-tmpl">
+        <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    </template>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦩</text></svg>">
 </head>
 <body>
     <!-- Login/Signup Container -->
@@ -17,35 +26,41 @@
         <p class="tagline">Master math from pre-algebra to calculus</p>
         
         <!-- Login Form -->
-        <div id="login-form" class="form-section">
+        <form id="login-form" class="form-section" onsubmit="event.preventDefault(); login()">
             <h2>Login</h2>
-            <input type="email" id="login-email" placeholder="Email" required>
-            <input type="password" id="login-password" placeholder="Password" required>
-            <button onclick="login()">Login</button>
+            <label for="login-email" class="sr-only">Email</label>
+            <input type="email" id="login-email" placeholder="Email" autocomplete="email" required>
+            <label for="login-password" class="sr-only">Password</label>
+            <input type="password" id="login-password" placeholder="Password" autocomplete="current-password" required>
+            <button type="submit">Login</button>
             <div class="auth-divider"><span>or</span></div>
-            <button class="google-btn" onclick="signInWithGoogle()">
-                <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <button type="button" class="google-btn" onclick="signInWithGoogle()">
+                <span class="google-icon-slot"></span>
                 Sign in with Google
             </button>
-            <p>Don't have an account? <a href="#" onclick="toggleForms()">Sign up</a></p>
-<p><a href="#" onclick="resetPassword()">Forgot password?</a></p>
-        </div>
+            <p>Don't have an account? <a href="#" onclick="event.preventDefault(); toggleForms()">Sign up</a></p>
+            <p><a href="#" onclick="event.preventDefault(); resetPassword()">Forgot password?</a></p>
+        </form>
 
         <!-- Signup Form -->
-        <div id="signup-form" class="form-section hidden">
+        <form id="signup-form" class="form-section hidden" onsubmit="event.preventDefault(); signup()">
             <h2>Sign Up</h2>
-            <input type="email" id="signup-email" placeholder="Email" required>
-            <input type="password" id="signup-password" placeholder="Password (min 6 characters)" required>
-            <button onclick="signup()">Sign Up</button>
+            <label for="signup-name" class="sr-only">Your name</label>
+            <input type="text" id="signup-name" placeholder="Your name" autocomplete="name" required>
+            <label for="signup-email" class="sr-only">Email</label>
+            <input type="email" id="signup-email" placeholder="Email" autocomplete="email" required>
+            <label for="signup-password" class="sr-only">Password (min 6 characters)</label>
+            <input type="password" id="signup-password" placeholder="Password (min 6 characters)" autocomplete="new-password" required>
+            <button type="submit">Sign Up</button>
             <div class="auth-divider"><span>or</span></div>
-            <button class="google-btn" onclick="signInWithGoogle()">
-                <svg class="google-icon" viewBox="0 0 24 24" width="18" height="18"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            <button type="button" class="google-btn" onclick="signInWithGoogle()">
+                <span class="google-icon-slot"></span>
                 Sign up with Google
             </button>
-            <p>Already have an account? <a href="#" onclick="toggleForms()">Login</a></p>
-        </div>
+            <p>Already have an account? <a href="#" onclick="event.preventDefault(); toggleForms()">Login</a></p>
+        </form>
 
-        <p id="error-message" class="error"></p>
+        <p id="error-message" class="error" role="alert" aria-live="polite"></p>
     </div>
 
     <!-- Main Dashboard -->
@@ -65,7 +80,7 @@
                         <span class="level-number" id="user-level">1</span>
                     </div>
                     <div class="xp-info">
-                        <div class="xp-bar-container">
+                        <div class="xp-bar-container" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Experience points progress">
                             <div class="xp-bar" id="xp-bar"></div>
                         </div>
                         <span class="xp-text"><span id="current-xp">0</span> / <span id="next-level-xp">100</span> XP</span>
@@ -74,9 +89,9 @@
 
                 <div class="user-menu">
                     <span class="welcome-text">Welcome, <span id="user-name">Student</span>!</span>
-                    <button onclick="showProfile()" class="icon-button" title="Profile">👤</button>
-                    <button onclick="showLeaderboard()" class="icon-button" title="Leaderboard">🏆</button>
-                    <button onclick="logout()" class="icon-button" title="Logout">🚪</button>
+                    <button onclick="showProfile()" class="icon-button" title="Profile" aria-label="View your profile">👤</button>
+                    <button onclick="showLeaderboard()" class="icon-button" title="Leaderboard" aria-label="View leaderboard">🏆</button>
+                    <button onclick="logout()" class="icon-button" title="Logout" aria-label="Log out">🚪</button>
                 </div>
             </div>
         </header>
@@ -84,17 +99,17 @@
         <!-- Main Content -->
         <main class="main-content" id="main-view">
             <!-- View Toggle -->
-            <div class="view-toggle">
-                <button class="toggle-btn active" onclick="showLearnView()" id="learn-toggle">
+            <div class="view-toggle" role="tablist" aria-label="Dashboard views">
+                <button class="toggle-btn active" onclick="showLearnView()" id="learn-toggle" role="tab" aria-selected="true" aria-controls="learn-view">
                     📚 Learn
                 </button>
-                <button class="toggle-btn" onclick="showPracticeView()" id="practice-toggle">
+                <button class="toggle-btn" onclick="showPracticeView()" id="practice-toggle" role="tab" aria-selected="false" aria-controls="practice-view">
                     ✏️ Practice
                 </button>
             </div>
 
             <!-- Learn View (Lesson Paths) -->
-            <div id="learn-view">
+            <div id="learn-view" role="tabpanel" aria-labelledby="learn-toggle">
                 <div class="welcome-section">
                     <h2>Your Learning Paths</h2>
                     <p>Complete lessons in order to unlock new content</p>
@@ -109,7 +124,7 @@
                             <div class="progress-bar">
                                 <div class="progress-fill" id="algebra-progress"></div>
                             </div>
-                            <span class="progress-text"><span id="algebra-completed">0</span>/10 completed</span>
+                            <span class="progress-text"><span id="algebra-completed">0</span>/27 completed</span>
                         </div>
                     </div>
 
@@ -120,7 +135,7 @@
                             <div class="progress-bar">
                                 <div class="progress-fill" id="geometry-progress"></div>
                             </div>
-                            <span class="progress-text"><span id="geometry-completed">0</span>/10 completed</span>
+                            <span class="progress-text"><span id="geometry-completed">0</span>/27 completed</span>
                         </div>
                     </div>
 
@@ -131,29 +146,7 @@
                             <div class="progress-bar">
                                 <div class="progress-fill" id="trigonometry-progress"></div>
                             </div>
-                            <span class="progress-text"><span id="trigonometry-completed">0</span>/10 completed</span>
-                        </div>
-                    </div>
-
-                    <div class="path-card" onclick="showPath('prealgebra')">
-                        <div class="path-icon">🔢</div>
-                        <h3>Pre-Algebra Path</h3>
-                        <div class="path-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="prealgebra-progress"></div>
-                            </div>
-                            <span class="progress-text"><span id="prealgebra-completed">0</span>/10 completed</span>
-                        </div>
-                    </div>
-
-                    <div class="path-card" onclick="showPath('statistics')">
-                        <div class="path-icon">📈</div>
-                        <h3>Statistics Path</h3>
-                        <div class="path-progress">
-                            <div class="progress-bar">
-                                <div class="progress-fill" id="statistics-progress"></div>
-                            </div>
-                            <span class="progress-text"><span id="statistics-completed">0</span>/10 completed</span>
+                            <span class="progress-text"><span id="trigonometry-completed">0</span>/27 completed</span>
                         </div>
                     </div>
 
@@ -164,14 +157,14 @@
                             <div class="progress-bar">
                                 <div class="progress-fill" id="calculus-progress"></div>
                             </div>
-                            <span class="progress-text"><span id="calculus-completed">0</span>/10 completed</span>
+                            <span class="progress-text"><span id="calculus-completed">0</span>/27 completed</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Practice View -->
-            <div id="practice-view" class="hidden">
+            <div id="practice-view" class="hidden" role="tabpanel" aria-labelledby="practice-toggle">
                 <div class="welcome-section">
                     <h2>Practice Your Skills</h2>
                     <p>Sharpen what you've learned with focused drills</p>
@@ -272,44 +265,6 @@
                         <div class="topic-stats">
                             <span class="stat">🎯 <span id="trigonometry-practice-count">0</span> correct</span>
                             <span class="stat">📊 <span id="trigonometry-total-count">0</span> attempted</span>
-                        </div>
-                    </div>
-
-                    <div class="topic-card" onclick="selectTopic('prealgebra', this)">
-                        <div class="topic-card-top">
-                            <div class="topic-icon">🔢</div>
-                            <div class="mastery-ring" id="prealgebra-mastery-ring">
-                                <svg viewBox="0 0 36 36">
-                                    <circle cx="18" cy="18" r="15.915" class="mastery-bg"/>
-                                    <circle cx="18" cy="18" r="15.915" class="mastery-fg" id="prealgebra-mastery-arc" stroke-dasharray="0 100"/>
-                                </svg>
-                                <span class="mastery-pct" id="prealgebra-mastery-pct">—</span>
-                            </div>
-                        </div>
-                        <h3>Pre-Algebra</h3>
-                        <p>Fractions, decimals, ratios, and integers</p>
-                        <div class="topic-stats">
-                            <span class="stat">🎯 <span id="prealgebra-practice-count">0</span> correct</span>
-                            <span class="stat">📊 <span id="prealgebra-total-count">0</span> attempted</span>
-                        </div>
-                    </div>
-
-                    <div class="topic-card" onclick="selectTopic('statistics', this)">
-                        <div class="topic-card-top">
-                            <div class="topic-icon">📈</div>
-                            <div class="mastery-ring" id="statistics-mastery-ring">
-                                <svg viewBox="0 0 36 36">
-                                    <circle cx="18" cy="18" r="15.915" class="mastery-bg"/>
-                                    <circle cx="18" cy="18" r="15.915" class="mastery-fg" id="statistics-mastery-arc" stroke-dasharray="0 100"/>
-                                </svg>
-                                <span class="mastery-pct" id="statistics-mastery-pct">—</span>
-                            </div>
-                        </div>
-                        <h3>Statistics</h3>
-                        <p>Data, probability, and distributions</p>
-                        <div class="topic-stats">
-                            <span class="stat">🎯 <span id="statistics-practice-count">0</span> correct</span>
-                            <span class="stat">📊 <span id="statistics-total-count">0</span> attempted</span>
                         </div>
                     </div>
 
@@ -425,7 +380,7 @@
                 <!-- Profile Display -->
                 <div id="profile-display" class="profile-section">
                     <div class="profile-header">
-                        <img id="profile-img" src="" alt="Profile Picture" class="profile-picture">
+                        <div class="profile-avatar" id="profile-avatar">?</div>
                         <div class="profile-info">
                             <h3 id="display-name">Loading...</h3>
                             <p class="email-text"><span id="display-email"></span></p>
@@ -454,10 +409,6 @@
                         </div>
                     </div>
 
-                    <div class="profile-bio">
-                        <h4>Bio</h4>
-                        <p id="display-bio">No bio set</p>
-                    </div>
                     <button onclick="toggleEditMode()" class="secondary-button">Edit Profile</button>
                 </div>
 
@@ -467,13 +418,6 @@
                     <div class="form-section">
                         <label for="profile-name">Display Name</label>
                         <input type="text" id="profile-name" placeholder="Your name">
-                        
-                        <label for="profile-bio">Bio</label>
-                        <textarea id="profile-bio" placeholder="Tell us about yourself..." rows="4"></textarea>
-                        
-                        <label for="profile-picture">Profile Picture URL</label>
-                        <input type="url" id="profile-picture" placeholder="https://example.com/your-image.jpg">
-                        <p class="help-text">Paste a link to an image</p>
                         
                         <div class="button-group">
                             <button onclick="saveProfile()">Save Profile</button>
@@ -490,28 +434,101 @@
                 <button class="back-button" onclick="showDashboard()">← Back to Dashboard</button>
                 
                 <h2>🏆 Leaderboard</h2>
-                <div class="lb-tabs">
-                    <button class="lb-tab active" id="lb-tab-weekly" onclick="switchLeaderboard('weekly')">This Week</button>
-                    <button class="lb-tab" id="lb-tab-alltime" onclick="switchLeaderboard('alltime')">All Time</button>
+                <div class="lb-tabs" role="tablist" aria-label="Leaderboard time range">
+                    <button class="lb-tab active" id="lb-tab-weekly" onclick="switchLeaderboard('weekly')" role="tab" aria-selected="true">This Week</button>
+                    <button class="lb-tab" id="lb-tab-alltime" onclick="switchLeaderboard('alltime')" role="tab" aria-selected="false">All Time</button>
                 </div>
                 <p class="leaderboard-subtitle" id="lb-subtitle">Top students this week</p>
                 <div class="lb-reset-timer" id="lb-reset-timer"></div>
 
-                <div class="leaderboard-list" id="leaderboard-list">
+                <div class="leaderboard-list" id="leaderboard-list" role="list" aria-label="Student rankings">
                     <div class="loading-message">Loading leaderboard...</div>
                 </div>
 
                 <!-- Friend Challenges -->
                 <div class="friend-challenge-section">
                     <h3>⚔️ Friend Challenge</h3>
-                    <p class="fc-desc">Challenge a friend to a timed quiz! Share your code or enter theirs.</p>
-                    <div class="fc-actions">
-                        <button class="fc-btn fc-create" onclick="createChallenge()">🎯 Create Challenge</button>
+                    <p class="fc-desc">Challenge a friend to a head-to-head timed quiz!</p>
+
+                    <!-- Default actions (Create / Join) -->
+                    <div class="fc-actions" id="fc-actions-default">
+                        <button class="fc-btn fc-create" onclick="openChallengeCreator()">🎯 Create Challenge</button>
                         <div class="fc-join-row">
-                            <input type="text" id="fc-join-code" placeholder="Enter challenge code" maxlength="8">
+                            <label for="fc-join-code" class="sr-only">Challenge code</label>
+                            <input type="text" id="fc-join-code" placeholder="Enter code" maxlength="8" aria-label="Challenge code">
                             <button class="fc-btn fc-join" onclick="joinChallenge()">Join</button>
                         </div>
                     </div>
+
+                    <!-- Challenge Creator Panel -->
+                    <div class="fc-creator hidden" id="fc-creator">
+                        <h4 class="fc-creator-title">⚙️ Set Up Your Challenge</h4>
+
+                        <div class="fc-setting">
+                            <label class="fc-setting-label">Topic</label>
+                            <div class="fc-chips" id="fc-topic-chips">
+                                <button class="fc-chip active" data-value="mixed" onclick="selectChallengeOption(this, 'topic')">🎲 Mixed</button>
+                                <button class="fc-chip" data-value="algebra" onclick="selectChallengeOption(this, 'topic')">📐 Algebra</button>
+                                <button class="fc-chip" data-value="geometry" onclick="selectChallengeOption(this, 'topic')">📏 Geometry</button>
+                                <button class="fc-chip" data-value="trigonometry" onclick="selectChallengeOption(this, 'topic')">📊 Trigonometry</button>
+                                <button class="fc-chip" data-value="calculus" onclick="selectChallengeOption(this, 'topic')">♾️ Calculus</button>
+                            </div>
+                        </div>
+
+                        <div class="fc-setting">
+                            <label class="fc-setting-label">Difficulty</label>
+                            <div class="fc-chips" id="fc-diff-chips">
+                                <button class="fc-chip fc-chip-easy" data-value="easy" onclick="selectChallengeOption(this, 'difficulty')">Easy</button>
+                                <button class="fc-chip fc-chip-medium active" data-value="medium" onclick="selectChallengeOption(this, 'difficulty')">Medium</button>
+                                <button class="fc-chip fc-chip-hard" data-value="hard" onclick="selectChallengeOption(this, 'difficulty')">Hard</button>
+                            </div>
+                        </div>
+
+                        <div class="fc-setting">
+                            <label class="fc-setting-label">Problems</label>
+                            <div class="fc-chips" id="fc-count-chips">
+                                <button class="fc-chip" data-value="5" onclick="selectChallengeOption(this, 'count')">5</button>
+                                <button class="fc-chip active" data-value="10" onclick="selectChallengeOption(this, 'count')">10</button>
+                                <button class="fc-chip" data-value="15" onclick="selectChallengeOption(this, 'count')">15</button>
+                            </div>
+                        </div>
+
+                        <div class="fc-creator-actions">
+                            <button class="fc-btn fc-create-go" onclick="createChallenge()">🚀 Create &amp; Get Code</button>
+                            <button class="fc-btn fc-cancel" onclick="closeChallengeCreator()">Cancel</button>
+                        </div>
+                    </div>
+
+                    <!-- Lobby (waiting for opponent / countdown) -->
+                    <div class="fc-lobby hidden" id="fc-lobby">
+                        <div class="fc-lobby-code-area">
+                            <span class="fc-lobby-label">Challenge Code</span>
+                            <span class="fc-lobby-code" id="fc-lobby-code">------</span>
+                            <button class="fc-copy-btn" id="fc-lobby-copy" onclick="copyChallengeCode()">📋 Copy</button>
+                        </div>
+                        <div class="fc-lobby-info" id="fc-lobby-info">
+                            <span class="fc-lobby-topic" id="fc-lobby-topic"></span>
+                            <span class="fc-lobby-diff" id="fc-lobby-diff"></span>
+                            <span class="fc-lobby-count" id="fc-lobby-count"></span>
+                        </div>
+                        <div class="fc-lobby-players" id="fc-lobby-players">
+                            <div class="fc-lobby-player" id="fc-lobby-p1">
+                                <div class="fc-lobby-avatar">?</div>
+                                <span class="fc-lobby-pname">Waiting...</span>
+                            </div>
+                            <div class="fc-lobby-vs">⚔️</div>
+                            <div class="fc-lobby-player" id="fc-lobby-p2">
+                                <div class="fc-lobby-avatar">?</div>
+                                <span class="fc-lobby-pname">Waiting...</span>
+                            </div>
+                        </div>
+                        <div class="fc-lobby-status" id="fc-lobby-status">Share the code with a friend!</div>
+                        <div class="fc-lobby-countdown hidden" id="fc-lobby-countdown">
+                            <span class="fc-countdown-number" id="fc-countdown-number">3</span>
+                        </div>
+                        <button class="fc-btn fc-cancel" onclick="leaveLobby()">Leave Lobby</button>
+                    </div>
+
                     <div class="fc-status hidden" id="fc-status"></div>
                     <div class="fc-active-list" id="fc-active-list"></div>
                 </div>
@@ -521,6 +538,25 @@
         <!-- Practice Session View -->
         <div class="practice-session hidden" id="practice-session">
             <div class="practice-session-container">
+                <!-- Multiplayer Live Overlay (shown only during friend challenges) -->
+                <div class="mp-overlay hidden" id="mp-overlay">
+                    <div class="mp-inner">
+                        <div class="mp-side mp-you-side">
+                            <span class="mp-player-name">You</span>
+                            <div class="mp-bar-wrap"><div class="mp-bar-fill mp-you-fill" id="mp-you-bar" style="width:0%"></div></div>
+                            <span class="mp-score" id="mp-you-score">0</span>
+                        </div>
+                        <div class="mp-vs-col">
+                            <span class="mp-vs-icon">⚔️</span>
+                            <span class="mp-vs-label">vs</span>
+                        </div>
+                        <div class="mp-side mp-opp-side">
+                            <span class="mp-player-name" id="mp-opp-name">Opponent</span>
+                            <div class="mp-bar-wrap"><div class="mp-bar-fill mp-opp-fill" id="mp-opp-bar" style="width:0%"></div></div>
+                            <span class="mp-score" id="mp-opp-score">—</span>
+                        </div>
+                    </div>
+                </div>
                 <!-- Session Header -->
                 <div class="session-header">
                     <div class="session-info">
@@ -625,7 +661,60 @@
     <!-- Confetti Canvas -->
     <canvas id="confetti-canvas"></canvas>
 
+    <!-- Worked Example Modal -->
+    <div id="we-modal-overlay" class="we-modal-overlay hidden" onclick="if(event.target===this)closeWorkedExample()">
+        <div class="we-modal">
+            <div class="we-header">
+                <span class="we-icon">📝</span>
+                <span class="we-title">Worked Example</span>
+                <button class="we-close-btn" onclick="closeWorkedExample()">✕</button>
+            </div>
+            <div class="we-question-area" id="we-question"></div>
+            <div class="we-divider"></div>
+            <div class="we-solution-area">
+                <p class="we-solution-label">Step-by-step solution:</p>
+                <div class="we-steps" id="we-steps"></div>
+            </div>
+            <div class="we-footer">
+                <button class="we-next-btn" id="we-next-btn" onclick="revealNextStep()">Show Next Step →</button>
+                <button class="we-done-btn hidden" id="we-done-btn" onclick="closeWorkedExample()">Got It — Back to Practice ✓</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
+    <script>
+        // KaTeX rendering helper — called from app.js after setting innerHTML
+        window._pendingKaTeX = [];
+        window._renderMathInEl = function(el) {
+            if (!el) return;
+            if (window._katexLoaded && typeof renderMathInElement === 'function') {
+                try {
+                    renderMathInElement(el, {
+                        delimiters: [
+                            { left: '$$', right: '$$', display: true },
+                            { left: '$',  right: '$',  display: false },
+                            { left: '\\(', right: '\\)', display: false },
+                            { left: '\\[', right: '\\]', display: true }
+                        ],
+                        throwOnError: false,
+                        errorColor: '#cc0000'
+                    });
+                } catch(e) { /* non-fatal */ }
+            } else {
+                window._pendingKaTeX.push(el);
+            }
+        };
+        // Inject the Google icon from the template into every .google-icon-slot
+        document.addEventListener('DOMContentLoaded', () => {
+            const tmpl = document.getElementById('google-icon-tmpl');
+            if (tmpl) {
+                document.querySelectorAll('.google-icon-slot').forEach(slot => {
+                    slot.replaceWith(tmpl.content.cloneNode(true));
+                });
+            }
+        });
+    </script>
     <script type="module" src="app.js"></script>
 </body>
 </html>
