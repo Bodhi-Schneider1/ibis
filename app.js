@@ -39,6 +39,7 @@ let currentTopic = null;
 let lessonPracticeState = {
     totalProblems: 0,
     completed: 0,
+    correctCount: 0,
     answeredIndices: new Set()
 };
 
@@ -207,45 +208,119 @@ function renderMath(el) {
 function getLessonVisual(topic, lessonId) {
     const id = lessonId.toLowerCase();
 
-    // --- ALGEBRA ---
-    if (topic === 'algebra') {
-        if (id.includes('graph') || id.includes('slope')) return svgVisuals.coordinateLine({ m: 2, b: 1 });
-        if (id.includes('inequal')) return svgVisuals.numberLine({ value: 3, op: '<', min: -2, max: 8 });
-        if (id.includes('quadratic')) return svgVisuals.parabola({ a: 1, vertex: [2.5, -0.25], roots: [2, 3] });
-        if (id.includes('system')) return svgVisuals.coordinateLine({ m: 1, b: 0, range: 5 });
-    }
+    // Per-lesson-ID visual map — each lesson gets a unique, accurate diagram
+    const visualMap = {
+        // ---- ALGEBRA ----
+        'algebra:intro-algebra':          () => svgVisuals.expressionParts(),
+        'algebra:order-of-operations':    () => svgVisuals.pemdasOrder(),
+        'algebra:linear-equations':       () => svgVisuals.balanceScale(),
+        'algebra:distributive-property':  () => svgVisuals.distributiveArea(),
+        'algebra:combining-like-terms':   () => svgVisuals.likeTermsGroup(),
+        'algebra:solving-inequalities':   () => svgVisuals.numberLine({ value: 3, op: '<', min: -2, max: 8 }),
+        'algebra:graphing-lines':         () => svgVisuals.coordinateLine({ m: 2, b: -1 }),
+        'algebra:systems-equations':      () => svgVisuals.twoLines(),
+        'algebra:multi-step-equations':   () => svgVisuals.balanceScale(),
+        'algebra:absolute-value':         () => svgVisuals.absoluteValueGraph(),
+        'algebra:quadratic-equations':    () => svgVisuals.parabola({ a: 1, vertex: [2, -1], roots: [1, 3] }),
+        'algebra:factoring':             () => svgVisuals.factoringArea(),
+        'algebra:exponents':             () => svgVisuals.exponentTower(),
+        'algebra:proportions-ratios':    () => svgVisuals.proportionBars(),
+        'algebra:percent-problems':      () => svgVisuals.percentBar(),
+        'algebra:functions':             () => svgVisuals.functionMachine(),
+        'algebra:compound-inequalities': () => svgVisuals.compoundNumberLine(),
+        'algebra:completing-square':     () => svgVisuals.completingSquareArea(),
+        'algebra:radical-expressions':   () => svgVisuals.radicalDiagram(),
+        'algebra:arithmetic-sequences':  () => svgVisuals.sequenceDots(),
+        'algebra:logarithms-intro':      () => svgVisuals.logExpCurves(),
+        'algebra:slope-parallel-perp':   () => svgVisuals.coordinateLine({ m: -0.5, b: 3 }),
 
-    // --- GEOMETRY ---
-    if (topic === 'geometry') {
-        if (id.includes('circle') || id.includes('arc')) return svgVisuals.circle({ r: 5 });
-        if (id.includes('pythag')) return svgVisuals.pythSquares({ a: 3, b: 4, c: 5 });
-        if (id.includes('triangle') || id.includes('right')) return svgVisuals.rightTriangle({ a: 3, b: 4, c: 5 });
-        if (id.includes('angle')) return svgVisuals.angleDiagram({ degrees: 55, type: 'acute' });
-        if (id.includes('perimeter') || id.includes('area')) return svgVisuals.areaShape({ shape: 'rectangle', dims: { l: 8, w: 5 } });
-        if (id.includes('volume') || id.includes('surface')) return svgVisuals.shape3D({ shape: 'cube', dims: { s: 4 } });
-        if (id.includes('transform')) return svgVisuals.transformGrid({
+        // ---- GEOMETRY ----
+        'geometry:intro-geometry':          () => svgVisuals.pointLineRay(),
+        'geometry:angle-basics':            () => svgVisuals.angleDiagram({ degrees: 55, type: 'acute' }),
+        'geometry:angle-pairs':             () => svgVisuals.anglePairsCombo(),
+        'geometry:parallel-transversals':   () => svgVisuals.parallelTransversal(),
+        'geometry:triangle-angle-sum':      () => svgVisuals.triangleAngleSum(),
+        'geometry:classifying-triangles':   () => svgVisuals.triangleTypes(),
+        'geometry:pythagorean-theorem':     () => svgVisuals.pythSquares({ a: 3, b: 4, c: 5 }),
+        'geometry:perimeter-area':          () => svgVisuals.areaShape({ shape: 'rectangle', dims: { l: 8, w: 5 } }),
+        'geometry:circles-basics':          () => svgVisuals.circle({ r: 5 }),
+        'geometry:quadrilaterals':          () => svgVisuals.quadTypes(),
+        'geometry:polygon-angles':          () => svgVisuals.polygonDiagonals(),
+        'geometry:translations-reflections': () => svgVisuals.transformGrid({
             original: [[1,1],[3,1],[3,3],[1,3]],
             transformed: [[4,3],[6,3],[6,5],[4,5]],
             type: 'translate'
-        });
-    }
+        }),
+        'geometry:rotations':               () => svgVisuals.rotationDiagram(),
+        'geometry:congruence':              () => svgVisuals.congruentShapes(),
+        'geometry:similarity':              () => svgVisuals.similarShapes(),
+        'geometry:distance-midpoint':       () => svgVisuals.distanceMidpoint(),
+        'geometry:slope-parallel-perp':     () => svgVisuals.parallelPerpLines(),
+        'geometry:composite-area':          () => svgVisuals.compositeShape(),
+        'geometry:surface-area':            () => svgVisuals.shape3D({ shape: 'cube', dims: { s: 4 } }),
+        'geometry:volume':                  () => svgVisuals.shape3D({ shape: 'cube', dims: { s: 5 } }),
+        'geometry:arcs-sectors':            () => svgVisuals.arcSector(),
+        'geometry:triangle-inequality':     () => svgVisuals.triangleInequalityDemo(),
+        'geometry:special-right-triangles': () => svgVisuals.specialRightTriangles(),
+        'geometry:inscribed-angles':        () => svgVisuals.inscribedAngle(),
+        'geometry:geometric-probability':   () => svgVisuals.dartboard(),
+        'geometry:symmetry-nets':           () => svgVisuals.symmetryLines(),
 
-    // --- TRIGONOMETRY ---
-    if (topic === 'trigonometry') {
-        if (id.includes('unit')) return svgVisuals.unitCircle();
-        if (id.includes('graph')) return svgVisuals.sineWave({ func: 'sin', amplitude: 1 });
-        if (id.includes('radian')) return svgVisuals.unitCircle();
-        return svgVisuals.trigTriangle({ angle: 37, opp: 3, adj: 4, hyp: 5 });
-    }
+        // ---- TRIGONOMETRY ----
+        'trigonometry:intro-trig':             () => svgVisuals.sohcahtoaTriangle(),
+        'trigonometry:trig-ratios':            () => svgVisuals.trigTriangle({ angle: 37, opp: 3, adj: 4, hyp: 5 }),
+        'trigonometry:trig-find-sides':        () => svgVisuals.findSideDiagram(),
+        'trigonometry:inverse-trig':           () => svgVisuals.inverseTrigDiagram(),
+        'trigonometry:degrees-radians':        () => svgVisuals.degreeRadianArc(),
+        'trigonometry:unit-circle':            () => svgVisuals.unitCircle(),
+        'trigonometry:reference-angles':       () => svgVisuals.referenceAngleDiagram(),
+        'trigonometry:reciprocal-trig':        () => svgVisuals.trigTriangle({ angle: 45, opp: 1, adj: 1, hyp: 1.41 }),
+        'trigonometry:pythagorean-identities': () => svgVisuals.unitCircle(),
+        'trigonometry:graphing-sin-cos':       () => svgVisuals.sineWave({ func: 'sin', amplitude: 1 }),
+        'trigonometry:graphing-tan':           () => svgVisuals.tanGraph(),
+        'trigonometry:trig-equations':         () => svgVisuals.unitCircle(),
+        'trigonometry:law-of-sines':           () => svgVisuals.lawSinesTriangle(),
+        'trigonometry:law-of-cosines':         () => svgVisuals.lawCosinesTriangle(),
+        'trigonometry:ambiguous-case':         () => svgVisuals.ambiguousCaseDiagram(),
+        'trigonometry:triangle-area-trig':     () => svgVisuals.triangleAreaSinC(),
+        'trigonometry:polar-coords':           () => svgVisuals.polarGrid(),
+        'trigonometry:vectors':                () => svgVisuals.vectorDiagram(),
+        'trigonometry:dot-product':            () => svgVisuals.dotProductDiagram(),
+        'trigonometry:sinusoidal-modeling':     () => svgVisuals.sineWave({ func: 'sin', amplitude: 2 }),
+        'trigonometry:parametric':             () => svgVisuals.parametricCurve(),
+        'trigonometry:complex-trig':           () => svgVisuals.complexPlane(),
 
-    // --- CALCULUS ---
-    if (topic === 'calculus') {
-        if (id.includes('deriv') || id.includes('diff') || id.includes('chain')) return svgVisuals.tangentLine();
-        if (id.includes('integr') || id.includes('anti') || id.includes('ftc') || id.includes('u-sub')) return svgVisuals.areaUnderCurve({ f: 'x²', a: 0, b: 2 });
-        if (id.includes('area')) return svgVisuals.areaUnderCurve({ f: 'x', a: 1, b: 3 });
-        if (id.includes('limit')) return svgVisuals.tangentLine();
-    }
+        // ---- CALCULUS ----
+        'calculus:intro-limits':            () => svgVisuals.limitApproach(),
+        'calculus:limit-techniques':        () => svgVisuals.limitApproach(),
+        'calculus:continuity':              () => svgVisuals.continuityTypes(),
+        'calculus:derivative-concept':      () => svgVisuals.secantTangent(),
+        'calculus:power-rule':              () => svgVisuals.tangentLine(),
+        'calculus:product-rule':            () => svgVisuals.tangentLine(),
+        'calculus:quotient-rule':           () => svgVisuals.tangentLine(),
+        'calculus:chain-rule':              () => svgVisuals.chainDiagram(),
+        'calculus:implicit-diff':           () => svgVisuals.tangentLine(),
+        'calculus:increasing-decreasing':   () => svgVisuals.incDecGraph(),
+        'calculus:related-rates':           () => svgVisuals.tangentLine(),
+        'calculus:mvt':                     () => svgVisuals.mvtDiagram(),
+        'calculus:optimization':            () => svgVisuals.optimizationBox(),
+        'calculus:antiderivatives':         () => svgVisuals.areaUnderCurve({ f: 'x²', a: 0, b: 2 }),
+        'calculus:definite-integrals':      () => svgVisuals.areaUnderCurve({ f: 'x²', a: 1, b: 3 }),
+        'calculus:u-substitution':          () => svgVisuals.areaUnderCurve({ f: 'x²', a: 0, b: 3 }),
+        'calculus:integration-by-parts':    () => svgVisuals.areaUnderCurve({ f: 'x', a: 0, b: 4 }),
+        'calculus:improper-integrals':      () => svgVisuals.improperIntegral(),
+        'calculus:sequences':               () => svgVisuals.sequenceConverge(),
+        'calculus:series-tests':            () => svgVisuals.sequenceConverge(),
+        'calculus:taylor-series':           () => svgVisuals.taylorApprox(),
+        'calculus:diff-equations':          () => svgVisuals.slopeField(),
+        'calculus:integration-applications': () => svgVisuals.solidRevolution(),
+    };
 
+    const key = `${topic}:${id}`;
+    const factory = visualMap[key];
+    if (factory) {
+        try { return factory(); } catch(e) { return null; }
+    }
     return null;
 }
 
@@ -422,6 +497,327 @@ function _saveLiveChallengeProgress() {
     // Update local overlay immediately (optimistic)
     _updateMultiplayerOverlay(_lastChallengeData || { liveProgress: {}, results: {} }, user.uid);
 }
+
+// ============================================================
+// SCIENTIFIC CALCULATOR
+// ============================================================
+let _calcExpression = '';
+let _calcJustEvaluated = false;
+let _calcAngleMode = 'deg'; // 'deg' or 'rad'
+let _calcSciMode = false;
+
+// Topics/lessons that get the calculator FAB
+const CALC_ENABLED_TOPICS = ['trigonometry', 'calculus'];
+const CALC_ENABLED_LESSON_IDS = [
+    // Geometry lessons that need a calculator
+    'pythagorean-theorem', 'circles-basics', 'surface-area', 'volume',
+    'arcs-sectors', 'special-right-triangles', 'distance-midpoint',
+    'composite-area', 'geometric-probability',
+    // Algebra lessons that may need one
+    'quadratic-equations', 'completing-square', 'radical-expressions',
+    'logarithms-intro', 'scientific-notation'
+];
+
+function shouldShowCalculator(topic, lessonId) {
+    if (CALC_ENABLED_TOPICS.includes(topic)) return true;
+    if (lessonId && CALC_ENABLED_LESSON_IDS.includes(lessonId)) return true;
+    return false;
+}
+
+function showCalcFab() {
+    const fab = document.getElementById('calc-fab');
+    if (fab) fab.classList.remove('hidden');
+}
+
+function hideCalcFab() {
+    const fab = document.getElementById('calc-fab');
+    const panel = document.getElementById('calc-panel');
+    if (fab) fab.classList.add('hidden');
+    if (panel) panel.classList.add('hidden');
+}
+
+function toggleCalculator() {
+    const panel = document.getElementById('calc-panel');
+    if (!panel) return;
+    panel.classList.toggle('hidden');
+    // Reset position when reopening
+    if (!panel.classList.contains('hidden')) {
+        panel.style.transform = '';
+        _calcDragOffset = { x: 0, y: 0 };
+    }
+}
+
+function toggleCalcMode() {
+    _calcSciMode = !_calcSciMode;
+    const btn = document.getElementById('calc-mode-toggle');
+    const rows = [
+        document.getElementById('calc-sci-row'),
+        document.getElementById('calc-sci-row-2'),
+        document.getElementById('calc-sci-row-3')
+    ];
+    if (_calcSciMode) {
+        btn.classList.add('active');
+        rows.forEach(r => { if (r) r.classList.remove('hidden'); });
+    } else {
+        btn.classList.remove('active');
+        rows.forEach(r => { if (r) r.classList.add('hidden'); });
+    }
+}
+
+function setCalcAngleMode(mode) {
+    _calcAngleMode = mode;
+    document.getElementById('calc-deg-btn').classList.toggle('active', mode === 'deg');
+    document.getElementById('calc-rad-btn').classList.toggle('active', mode === 'rad');
+}
+
+function calcInput(val) {
+    // If we just evaluated and the user types a number, start fresh
+    if (_calcJustEvaluated && /^[0-9π(e]/.test(val)) {
+        _calcExpression = '';
+    }
+    _calcJustEvaluated = false;
+    _calcExpression += val;
+    _updateCalcDisplay();
+}
+
+function calcClear() {
+    _calcExpression = '';
+    _calcJustEvaluated = false;
+    document.getElementById('calc-result').textContent = '0';
+    document.getElementById('calc-result').classList.remove('error');
+    document.getElementById('calc-expression').innerHTML = '&nbsp;';
+}
+
+function calcDelete() {
+    if (_calcJustEvaluated) {
+        calcClear();
+        return;
+    }
+    // Remove last token (if it ends with a function like 'sin(', remove all of it)
+    const funcMatch = _calcExpression.match(/(sin|cos|tan|asin|acos|atan|log|ln|sqrt|abs)\($/);
+    if (funcMatch) {
+        _calcExpression = _calcExpression.slice(0, -funcMatch[0].length);
+    } else {
+        _calcExpression = _calcExpression.slice(0, -1);
+    }
+    _updateCalcDisplay();
+}
+
+function _updateCalcDisplay() {
+    const exprEl = document.getElementById('calc-expression');
+    const resultEl = document.getElementById('calc-result');
+    resultEl.classList.remove('error');
+
+    if (_calcExpression.length === 0) {
+        exprEl.innerHTML = '&nbsp;';
+        resultEl.textContent = '0';
+        return;
+    }
+
+    // Pretty-print expression
+    let pretty = _calcExpression
+        .replace(/\*/g, '×')
+        .replace(/\//g, '÷')
+        .replace(/sqrt/g, '√')
+        .replace(/PI/g, 'π');
+    exprEl.textContent = pretty;
+
+    // Try live preview evaluation
+    try {
+        const val = _evaluateCalcExpression(_calcExpression);
+        if (val !== null && isFinite(val)) {
+            resultEl.textContent = _formatCalcResult(val);
+        }
+    } catch(e) {
+        // Don't show errors while typing — only on explicit =
+    }
+}
+
+function calcEvaluate() {
+    if (!_calcExpression) return;
+    const resultEl = document.getElementById('calc-result');
+    const exprEl = document.getElementById('calc-expression');
+    resultEl.classList.remove('error');
+
+    try {
+        const val = _evaluateCalcExpression(_calcExpression);
+        if (val === null || !isFinite(val)) {
+            resultEl.textContent = isNaN(val) ? 'Undefined' : (val > 0 ? '∞' : '-∞');
+            resultEl.classList.add('error');
+        } else {
+            const formatted = _formatCalcResult(val);
+            exprEl.textContent = _calcExpression;
+            resultEl.textContent = formatted;
+            _calcExpression = formatted;
+        }
+    } catch(e) {
+        resultEl.textContent = 'Error';
+        resultEl.classList.add('error');
+    }
+    _calcJustEvaluated = true;
+}
+
+function _formatCalcResult(val) {
+    if (Number.isInteger(val) && Math.abs(val) < 1e15) return String(val);
+    const s = val.toPrecision(10);
+    // Remove trailing zeros after decimal
+    if (s.includes('.')) return parseFloat(s).toString();
+    return s;
+}
+
+function _evaluateCalcExpression(expr) {
+    // Convert our display notation to JS-evaluable math
+    let e = expr;
+    // Constants
+    e = e.replace(/π/g, `(${Math.PI})`);
+    e = e.replace(/(?<![a-z])e(?![a-z(])/gi, `(${Math.E})`);
+    // Operators
+    e = e.replace(/×/g, '*');
+    e = e.replace(/÷/g, '/');
+    e = e.replace(/−/g, '-');
+    e = e.replace(/%/g, '/100');
+    e = e.replace(/\^/g, '**');
+
+    // Trig functions — handle angle mode
+    const toAngle = _calcAngleMode === 'deg'
+        ? (v) => `((${v})*Math.PI/180)`
+        : (v) => `(${v})`;
+    const fromAngle = _calcAngleMode === 'deg'
+        ? (v) => `((${v})*180/Math.PI)`
+        : (v) => `(${v})`;
+
+    // Replace function names with Math equivalents
+    // Order matters: asin/acos/atan before sin/cos/tan
+    e = e.replace(/asin\(/g, '_ASIN_(');
+    e = e.replace(/acos\(/g, '_ACOS_(');
+    e = e.replace(/atan\(/g, '_ATAN_(');
+    e = e.replace(/sin\(/g, '_SIN_(');
+    e = e.replace(/cos\(/g, '_COS_(');
+    e = e.replace(/tan\(/g, '_TAN_(');
+    e = e.replace(/sqrt\(/g, 'Math.sqrt(');
+    e = e.replace(/abs\(/g, 'Math.abs(');
+    e = e.replace(/log\(/g, 'Math.log10(');
+    e = e.replace(/ln\(/g, 'Math.log(');
+
+    // Now process trig: find matching parens for each _SIN_( etc.
+    e = _replaceTrigCalls(e, '_SIN_', 'Math.sin', true, false);
+    e = _replaceTrigCalls(e, '_COS_', 'Math.cos', true, false);
+    e = _replaceTrigCalls(e, '_TAN_', 'Math.tan', true, false);
+    e = _replaceTrigCalls(e, '_ASIN_', 'Math.asin', false, true);
+    e = _replaceTrigCalls(e, '_ACOS_', 'Math.acos', false, true);
+    e = _replaceTrigCalls(e, '_ATAN_', 'Math.atan', false, true);
+
+    // Handle implicit multiplication: 2( → 2*(,  )2 → )*2, )(  → )*(
+    e = e.replace(/(\d)\(/g, '$1*(');
+    e = e.replace(/\)(\d)/g, ')*$1');
+    e = e.replace(/\)\(/g, ')*(');
+
+    // Safety: only allow math chars
+    if (/[^0-9+\-*/().eE,\s]/.test(e.replace(/Math\.\w+/g, '').replace(/__/g, ''))) {
+        // Has invalid chars — but we'll try anyway since our replacements are safe
+    }
+
+    // Evaluate in a restricted scope
+    const fn = new Function(`"use strict"; return (${e})`);
+    return fn();
+}
+
+function _replaceTrigCalls(expr, placeholder, mathFn, convertInput, convertOutput) {
+    let result = expr;
+    let safety = 0;
+    while (result.includes(placeholder + '(') && safety < 20) {
+        safety++;
+        const idx = result.indexOf(placeholder + '(');
+        const openParen = idx + placeholder.length;
+        // Find matching close paren
+        let depth = 0;
+        let closeIdx = -1;
+        for (let i = openParen; i < result.length; i++) {
+            if (result[i] === '(') depth++;
+            else if (result[i] === ')') { depth--; if (depth === 0) { closeIdx = i; break; } }
+        }
+        if (closeIdx === -1) {
+            // No matching paren — just replace and let it error naturally
+            result = result.replace(placeholder + '(', mathFn + '(');
+            break;
+        }
+        const inner = result.substring(openParen + 1, closeIdx);
+        let replacement;
+        if (convertInput && _calcAngleMode === 'deg') {
+            replacement = `${mathFn}((${inner})*Math.PI/180)`;
+        } else if (convertOutput && _calcAngleMode === 'deg') {
+            replacement = `(${mathFn}(${inner})*180/Math.PI)`;
+        } else {
+            replacement = `${mathFn}(${inner})`;
+        }
+        result = result.substring(0, idx) + replacement + result.substring(closeIdx + 1);
+    }
+    return result;
+}
+
+// --- Drag support ---
+let _calcDragOffset = { x: 0, y: 0 };
+let _calcDragging = false;
+let _calcDragStart = { x: 0, y: 0 };
+
+function _initCalcDrag() {
+    const titlebar = document.getElementById('calc-titlebar');
+    if (!titlebar) return;
+
+    titlebar.addEventListener('pointerdown', (e) => {
+        _calcDragging = true;
+        _calcDragStart = { x: e.clientX - _calcDragOffset.x, y: e.clientY - _calcDragOffset.y };
+        titlebar.setPointerCapture(e.pointerId);
+        e.preventDefault();
+    });
+
+    titlebar.addEventListener('pointermove', (e) => {
+        if (!_calcDragging) return;
+        _calcDragOffset.x = e.clientX - _calcDragStart.x;
+        _calcDragOffset.y = e.clientY - _calcDragStart.y;
+        const panel = document.getElementById('calc-panel');
+        if (panel) panel.style.transform = `translate(${_calcDragOffset.x}px, ${_calcDragOffset.y}px)`;
+    });
+
+    titlebar.addEventListener('pointerup', () => { _calcDragging = false; });
+    titlebar.addEventListener('pointercancel', () => { _calcDragging = false; });
+}
+
+// Init drag on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', _initCalcDrag);
+
+// Keyboard support — only when calc panel is visible
+document.addEventListener('keydown', (e) => {
+    const panel = document.getElementById('calc-panel');
+    if (!panel || panel.classList.contains('hidden')) return;
+    // Don't capture if user is typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    const key = e.key;
+    if (/^[0-9.]$/.test(key)) { calcInput(key); e.preventDefault(); }
+    else if (key === '+') { calcInput('+'); e.preventDefault(); }
+    else if (key === '-') { calcInput('−'); e.preventDefault(); }
+    else if (key === '*') { calcInput('×'); e.preventDefault(); }
+    else if (key === '/') { calcInput('÷'); e.preventDefault(); }
+    else if (key === '^') { calcInput('^'); e.preventDefault(); }
+    else if (key === '(' || key === ')') { calcInput(key); e.preventDefault(); }
+    else if (key === '%') { calcInput('%'); e.preventDefault(); }
+    else if (key === 'Enter' || key === '=') { calcEvaluate(); e.preventDefault(); }
+    else if (key === 'Backspace') { calcDelete(); e.preventDefault(); }
+    else if (key === 'Escape') { toggleCalculator(); e.preventDefault(); }
+    else if (key === 'c' || key === 'C') {
+        if (!e.ctrlKey && !e.metaKey) { calcClear(); e.preventDefault(); }
+    }
+});
+
+// Make functions globally available
+window.toggleCalculator = toggleCalculator;
+window.toggleCalcMode = toggleCalcMode;
+window.setCalcAngleMode = setCalcAngleMode;
+window.calcInput = calcInput;
+window.calcClear = calcClear;
+window.calcDelete = calcDelete;
+window.calcEvaluate = calcEvaluate;
 
 // Toast notification system
 function showToast(message, type = 'success') {
@@ -817,7 +1213,9 @@ async function showPath(topic) {
     
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
-    const completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+    const userData = userSnap.exists() ? userSnap.data() : {};
+    const completedLessons = userData.completedLessons || [];
+    const lessonScores = userData.lessonScores || {};
     
     const lessonPathEl = document.getElementById('lesson-path');
     lessonPathEl.innerHTML = '';
@@ -826,30 +1224,57 @@ async function showPath(topic) {
         const lessonKey = `${topic}-${lesson.id}`;
         const isCompleted = completedLessons.includes(lessonKey);
         const isUnlocked = index === 0 || completedLessons.includes(`${topic}-${path.lessons[index - 1].id}`);
+        const score = lessonScores[lessonKey] || null;
+        const accuracy = score ? score.accuracy : null;
+        const needsRedo = isCompleted && accuracy !== null && accuracy < 75;
         
         const nodeEl = document.createElement('div');
         nodeEl.className = 'lesson-node';
         
-        if (isCompleted) {
+        if (isCompleted && !needsRedo) {
             nodeEl.classList.add('completed');
+        } else if (needsRedo) {
+            nodeEl.classList.add('completed', 'needs-redo');
         } else if (isUnlocked) {
             nodeEl.classList.add('unlocked');
         } else {
             nodeEl.classList.add('locked');
         }
         
+        // Build accuracy badge HTML
+        let accuracyBadge = '';
+        if (isCompleted && accuracy !== null) {
+            const accClass = accuracy >= 75 ? 'acc-good' : 'acc-low';
+            accuracyBadge = `<span class="accuracy-badge ${accClass}">${accuracy}%</span>`;
+        }
+
+        // Build redo badge
+        let redoBadge = '';
+        if (needsRedo) {
+            const remainingXP = Math.max(0, lesson.xpReward - (score.xpAwarded || 0));
+            redoBadge = `<span class="redo-badge">Redo for +${remainingXP} XP</span>`;
+        }
+
+        const circleContent = isCompleted
+            ? (needsRedo ? '↻' : '✓')
+            : (isUnlocked ? (index + 1) : '🔒');
+        
         nodeEl.innerHTML = `
             <div class="node-circle">
-                ${isCompleted ? '✓' : isUnlocked ? (index + 1) : '🔒'}
+                ${circleContent}
             </div>
             <div class="node-content">
                 <h4>${lesson.title}</h4>
                 <p>${lesson.subtitle}</p>
-                <span class="xp-badge">+${lesson.xpReward} XP</span>
+                <div class="node-badges">
+                    <span class="xp-badge">+${lesson.xpReward} XP</span>
+                    ${accuracyBadge}
+                    ${redoBadge}
+                </div>
             </div>
         `;
         
-        if (isUnlocked) {
+        if (isUnlocked || needsRedo) {
             nodeEl.style.cursor = 'pointer';
             nodeEl.onclick = () => openLessonFromPath(topic, lesson.id);
         }
@@ -883,7 +1308,7 @@ async function openLessonFromPath(topic, lessonId) {
         if (s.type === 'practice') practiceCount += s.problems.length;
         if (s.type === 'generated_practice') practiceCount += s.generators.length;
     });
-    lessonPracticeState = { totalProblems: practiceCount, completed: 0, answeredIndices: new Set(), generatedProblems: {} };
+    lessonPracticeState = { totalProblems: practiceCount, completed: 0, correctCount: 0, answeredIndices: new Set(), generatedProblems: {} };
 
     document.getElementById('lesson-topic-badge').textContent = topic.charAt(0).toUpperCase() + topic.slice(1);
     document.getElementById('lesson-title').textContent = lesson.title;
@@ -1048,11 +1473,26 @@ async function openLessonFromPath(topic, lessonId) {
     if (user) {
         const userRef = doc(db, 'users', user.uid);
         const userSnap = await getDoc(userRef);
-        const completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        const completedLessons = userData.completedLessons || [];
+        const lessonScores = userData.lessonScores || {};
+        const score = lessonScores[currentLessonId] || null;
+        const accuracy = score ? score.accuracy : null;
+        const isCompleted = completedLessons.includes(currentLessonId);
+        const needsRedo = isCompleted && accuracy !== null && accuracy < 75;
         
-        if (completedLessons.includes(currentLessonId)) {
+        if (isCompleted && !needsRedo) {
             completeLessonBtn.disabled = true;
-            completeLessonBtn.textContent = '✓ Lesson Completed';
+            completeLessonBtn.textContent = `✓ Lesson Completed (${accuracy !== null ? accuracy + '%' : '✓'})`;
+        } else if (needsRedo) {
+            const remainingXP = Math.max(0, lesson.xpReward - (score.xpAwarded || 0));
+            if (practiceCount > 0) {
+                completeLessonBtn.disabled = true;
+                completeLessonBtn.textContent = `Complete practice to redo (0/${practiceCount})`;
+            } else {
+                completeLessonBtn.disabled = false;
+                completeLessonBtn.textContent = `Redo Lesson (+${remainingXP} XP available)`;
+            }
         } else if (practiceCount > 0) {
             completeLessonBtn.disabled = true;
             completeLessonBtn.textContent = `Complete practice first (0/${practiceCount})`;
@@ -1065,6 +1505,18 @@ async function openLessonFromPath(topic, lessonId) {
     document.getElementById('path-view').classList.add('hidden');
     document.getElementById('lesson-viewer').classList.remove('hidden');
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Show calculator FAB for advanced lessons
+    const lessonIdForCalc = currentLessonId.substring(currentTopic.length + 1);
+    if (shouldShowCalculator(currentTopic, lessonIdForCalc)) {
+        showCalcFab();
+        // Auto-enable scientific mode for trig/calc
+        if (['trigonometry', 'calculus'].includes(currentTopic) && !_calcSciMode) {
+            toggleCalcMode();
+        }
+    } else {
+        hideCalcFab();
+    }
 }
 
 // Handle a guided practice answer within a lesson
@@ -1124,6 +1576,7 @@ function handleLessonPractice(gIdx, choiceIdx) {
         feedbackEl.className = 'lp-feedback lp-feedback-correct';
         feedbackEl.innerHTML = `<span class="lp-fb-icon">✅</span> <strong>Correct!</strong> ${targetProblem.explanation}`;
         lessonPracticeState.completed++;
+        lessonPracticeState.correctCount++;
     } else {
         feedbackEl.className = 'lp-feedback lp-feedback-incorrect';
         feedbackEl.innerHTML = `<span class="lp-fb-icon">❌</span> <strong>Not quite.</strong> ${targetProblem.explanation}`;
@@ -1146,16 +1599,19 @@ function handleLessonPractice(gIdx, choiceIdx) {
     // Enable "Complete Lesson" button if all practice done
     if (completed >= totalProblems) {
         const completeLessonBtn = document.getElementById('complete-lesson-btn');
-        if (completeLessonBtn.textContent !== '✓ Lesson Completed') {
+        const isFullyCompleted = completeLessonBtn.textContent.startsWith('✓ Lesson Completed');
+        if (!isFullyCompleted) {
             completeLessonBtn.disabled = false;
-            completeLessonBtn.textContent = 'Complete Lesson ✓';
+            const acc = Math.round((lessonPracticeState.correctCount / totalProblems) * 100);
+            completeLessonBtn.textContent = `Complete Lesson (${acc}% accuracy) ✓`;
         }
         // Update the bar text
         const barText = document.querySelector('.lpb-text');
         if (barText) barText.textContent = 'All practice completed! You can finish the lesson.';
     } else {
         const completeLessonBtn = document.getElementById('complete-lesson-btn');
-        if (completeLessonBtn.textContent !== '✓ Lesson Completed') {
+        const isFullyCompleted = completeLessonBtn.textContent.startsWith('✓ Lesson Completed');
+        if (!isFullyCompleted) {
             completeLessonBtn.disabled = true;
             completeLessonBtn.textContent = `Complete practice first (${completed}/${totalProblems})`;
         }
@@ -1166,6 +1622,7 @@ function handleLessonPractice(gIdx, choiceIdx) {
 function closeLessonToPath() {
     document.getElementById('lesson-viewer').classList.add('hidden');
     document.getElementById('path-view').classList.remove('hidden');
+    hideCalcFab();
 }
 
 // Complete Lesson
@@ -1184,12 +1641,9 @@ async function completeLesson() {
     
     if (!userSnap.exists()) return;
     
-    const completedLessons = userSnap.data().completedLessons || [];
-    
-    if (completedLessons.includes(currentLessonId)) {
-        showToast('You already completed this lesson!', 'info');
-        return;
-    }
+    const userData = userSnap.data();
+    const completedLessons = userData.completedLessons || [];
+    const lessonScores = userData.lessonScores || {};
     
     // Extract lessonId from currentLessonId (remove topic prefix)
     const lessonId = currentLessonId.substring(currentTopic.length + 1);
@@ -1199,14 +1653,55 @@ async function completeLesson() {
         showToast('Error: Lesson not found', 'error');
         return;
     }
+
+    // Calculate accuracy
+    const { totalProblems, correctCount } = lessonPracticeState;
+    const accuracy = totalProblems > 0 ? Math.round((correctCount / totalProblems) * 100) : 100;
+    const previousScore = lessonScores[currentLessonId] || null;
+
+    // If already completed with >= 75%, no more XP
+    if (previousScore && previousScore.accuracy >= 75) {
+        showToast('You already completed this lesson with a great score!', 'info');
+        return;
+    }
+
+    // Calculate XP to award
+    const fullXP = lesson.xpReward;
+    const earnedXPFraction = accuracy / 100;
+    const newXP = Math.round(fullXP * earnedXPFraction);
+    const previousXP = previousScore ? previousScore.xpAwarded : 0;
+    const xpToAward = Math.max(0, newXP - previousXP);
+
+    // Update Firestore
+    const updateData = {
+        [`lessonScores.${currentLessonId}`]: {
+            accuracy,
+            correctCount,
+            totalProblems,
+            xpAwarded: Math.max(newXP, previousXP),
+            completedAt: new Date().toISOString()
+        }
+    };
+
+    // Add to completedLessons array if not already there (for path unlocking)
+    if (!completedLessons.includes(currentLessonId)) {
+        updateData.completedLessons = arrayUnion(currentLessonId);
+    }
+
+    await updateDoc(userRef, updateData);
     
-    await updateDoc(userRef, {
-        completedLessons: arrayUnion(currentLessonId)
-    });
+    if (xpToAward > 0) {
+        await awardXP(user.uid, xpToAward);
+    }
     
-    await awardXP(user.uid, lesson.xpReward);
-    
-    showToast(`🎉 Lesson Complete! +${lesson.xpReward} XP`);
+    if (accuracy >= 75) {
+        showToast(`🎉 Lesson Complete! ${accuracy}% accuracy — +${xpToAward} XP`);
+        launchConfetti();
+    } else if (previousScore) {
+        showToast(`📝 Redo complete! ${accuracy}% accuracy — +${xpToAward} XP. Try again for more!`);
+    } else {
+        showToast(`📝 Lesson Complete! ${accuracy}% accuracy — +${xpToAward} XP. Score 75%+ to earn full XP!`);
+    }
     
     await loadProfile(user.uid);
     closeLessonToPath();
@@ -1214,42 +1709,87 @@ async function completeLesson() {
 }
 
 // Load Leaderboard
+// Load Leaderboard
 let currentLeaderboardTab = 'weekly';
 
 async function loadLeaderboard(tab) {
     tab = tab || currentLeaderboardTab;
+
     const leaderboardList = document.getElementById('leaderboard-list');
     leaderboardList.innerHTML = '<div class="loading-message">Loading leaderboard...</div>';
-    
+
     const orderField = tab === 'weekly' ? 'weeklyXP' : 'xp';
-    
+
     try {
-        const q = query(collection(db, 'users'), orderBy(orderField, 'desc'), limit(10));
+        const q = query(collection(db, 'users'), orderBy(orderField, 'desc'), limit(50));
         const querySnapshot = await getDocs(q);
-        
+
         leaderboardList.innerHTML = '';
-        
+
         if (querySnapshot.empty) {
             leaderboardList.innerHTML = '<div class="loading-message">No users yet!</div>';
             return;
         }
-        
-        let rank = 1;
+
+        const thisWeek = getWeekStart();
         const currentUser = auth.currentUser;
-        querySnapshot.forEach((docSnap) => {
+
+        // Build user list first so we can correct weekly scores
+        const users = [];
+
+        querySnapshot.forEach(docSnap => {
             const data = docSnap.data();
+
+            const correctedWeeklyXP =
+                data.weekStart === thisWeek ? (data.weeklyXP || 0) : 0;
+
+            users.push({
+                id: docSnap.id,
+                data,
+                weeklyXP: correctedWeeklyXP
+            });
+        });
+
+        // Fix sorting for weekly leaderboard
+        if (tab === 'weekly') {
+            users.sort((a, b) => b.weeklyXP - a.weeklyXP);
+        } else {
+            users.sort((a, b) => (b.data.xp || 0) - (a.data.xp || 0));
+        }
+
+        // Only show top 10
+        const topUsers = users.slice(0, 10);
+
+        let rank = 1;
+
+        topUsers.forEach(user => {
+            const data = user.data;
             const level = calculateLevel(data.xp || 0);
-            const xpValue = tab === 'weekly' ? (data.weeklyXP || 0) : (data.xp || 0);
-            
+
+            const xpValue =
+                tab === 'weekly'
+                    ? user.weeklyXP
+                    : (data.xp || 0);
+
             const itemEl = document.createElement('div');
             itemEl.className = 'leaderboard-item';
             itemEl.setAttribute('role', 'listitem');
+
             if (rank <= 3) itemEl.classList.add('top-' + rank);
-            if (currentUser && docSnap.id === currentUser.uid) itemEl.classList.add('lb-you');
-            
-            const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-            const youBadge = (currentUser && docSnap.id === currentUser.uid) ? ' <span class="lb-you-tag">You</span>' : '';
-            
+            if (currentUser && user.id === currentUser.uid)
+                itemEl.classList.add('lb-you');
+
+            const rankIcon =
+                rank === 1 ? '🥇' :
+                rank === 2 ? '🥈' :
+                rank === 3 ? '🥉' :
+                `#${rank}`;
+
+            const youBadge =
+                (currentUser && user.id === currentUser.uid)
+                ? ' <span class="lb-you-tag">You</span>'
+                : '';
+
             itemEl.innerHTML = `
                 <div class="rank">${rankIcon}</div>
                 <div class="user-info">
@@ -1258,18 +1798,18 @@ async function loadLeaderboard(tab) {
                 </div>
                 <div class="user-badges">${xpValue} XP</div>
             `;
-            
+
             leaderboardList.appendChild(itemEl);
             rank++;
         });
+
     } catch (error) {
         console.error('Error loading leaderboard:', error);
         leaderboardList.innerHTML = '<div class="loading-message">Error loading leaderboard</div>';
     }
-    
-    // Update reset timer
+
     updateResetTimer();
-}
+} //cool leaderboard
 
 function switchLeaderboard(tab) {
     currentLeaderboardTab = tab;
@@ -2537,6 +3077,15 @@ function launchSession(problems, topicLabel, diffLabel, mode, total, challengeCo
     document.getElementById('practice-session').classList.remove('hidden');
     showProblem(0);
 
+    // Show calculator for advanced topics during practice
+    const practiceTopic = sessionState.topic || practiceState.topic || '';
+    if (shouldShowCalculator(practiceTopic, null)) {
+        showCalcFab();
+        if (['trigonometry', 'calculus'].includes(practiceTopic) && !_calcSciMode) {
+            toggleCalcMode();
+        }
+    }
+
     // Start real-time multiplayer listener for friend challenges
     if (challengeCode) {
         startChallengeListener(challengeCode);
@@ -3365,6 +3914,7 @@ function backToDashboardFromSummary() {
 function hideAllViews() {
     const views = ['main-view', 'path-view', 'lesson-viewer', 'profile-view', 'leaderboard-view', 'practice-session', 'session-summary'];
     views.forEach(id => document.getElementById(id).classList.add('hidden'));
+    hideCalcFab();
 }
 
 // Toggle between login and signup forms
