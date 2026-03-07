@@ -46,7 +46,7 @@
         <form id="signup-form" class="form-section hidden" onsubmit="event.preventDefault(); signup()">
             <h2>Sign Up</h2>
             <label for="signup-name" class="sr-only">Your name</label>
-            <input type="text" id="signup-name" placeholder="Your name" autocomplete="name" required>
+            <input type="text" id="signup-name" maxlength="14" placeholder="Your name" autocomplete="name" required>
             <label for="signup-email" class="sr-only">Email</label>
             <input type="email" id="signup-email" placeholder="Email" autocomplete="email" required>
             <label for="signup-password" class="sr-only">Password (min 6 characters)</label>
@@ -417,7 +417,7 @@
                     <h3>Edit Your Profile</h3>
                     <div class="form-section">
                         <label for="profile-name">Display Name</label>
-                        <input type="text" id="profile-name" placeholder="Your name">
+                        <input type="text" id="profile-name" maxlength="30" placeholder="Your name">
                         
                         <div class="button-group">
                             <button onclick="saveProfile()">Save Profile</button>
@@ -679,6 +679,87 @@
                 <button class="we-next-btn" id="we-next-btn" onclick="revealNextStep()">Show Next Step →</button>
                 <button class="we-done-btn hidden" id="we-done-btn" onclick="closeWorkedExample()">Got It — Back to Practice ✓</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ========== SCIENTIFIC CALCULATOR ========== -->
+    <button class="calc-fab hidden" id="calc-fab" onclick="toggleCalculator()" aria-label="Open Calculator">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="16" height="20" rx="2"/>
+            <line x1="8" y1="6" x2="16" y2="6"/>
+            <line x1="8" y1="10" x2="8" y2="10.01"/>
+            <line x1="12" y1="10" x2="12" y2="10.01"/>
+            <line x1="16" y1="10" x2="16" y2="10.01"/>
+            <line x1="8" y1="14" x2="8" y2="14.01"/>
+            <line x1="12" y1="14" x2="12" y2="14.01"/>
+            <line x1="16" y1="14" x2="16" y2="14.01"/>
+            <line x1="8" y1="18" x2="8" y2="18.01"/>
+            <line x1="12" y1="18" x2="16" y2="18"/>
+        </svg>
+        <span class="calc-fab-label">Calc</span>
+    </button>
+
+    <div class="calc-panel hidden" id="calc-panel">
+        <div class="calc-titlebar" id="calc-titlebar">
+            <span class="calc-title">Scientific Calculator</span>
+            <div class="calc-titlebar-actions">
+                <button class="calc-mode-toggle" id="calc-mode-toggle" onclick="toggleCalcMode()" aria-label="Toggle scientific mode">SCI</button>
+                <button class="calc-close-btn" onclick="toggleCalculator()" aria-label="Close calculator">✕</button>
+            </div>
+        </div>
+        <div class="calc-display">
+            <div class="calc-expression" id="calc-expression">&nbsp;</div>
+            <div class="calc-result" id="calc-result">0</div>
+        </div>
+        <div class="calc-sci-row hidden" id="calc-sci-row">
+            <button class="calc-btn calc-fn" onclick="calcInput('sin(')">sin</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('cos(')">cos</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('tan(')">tan</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('log(')">log</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('ln(')">ln</button>
+        </div>
+        <div class="calc-sci-row hidden" id="calc-sci-row-2">
+            <button class="calc-btn calc-fn" onclick="calcInput('asin(')">sin⁻¹</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('acos(')">cos⁻¹</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('atan(')">tan⁻¹</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('sqrt(')">√</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('^')">xʸ</button>
+        </div>
+        <div class="calc-sci-row hidden" id="calc-sci-row-3">
+            <button class="calc-btn calc-const" onclick="calcInput('π')">π</button>
+            <button class="calc-btn calc-const" onclick="calcInput('e')">e</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('abs(')">|x|</button>
+            <button class="calc-btn calc-fn" onclick="calcInput('(')">(</button>
+            <button class="calc-btn calc-fn" onclick="calcInput(')')">)</button>
+        </div>
+        <div class="calc-grid">
+            <button class="calc-btn calc-clear" onclick="calcClear()">AC</button>
+            <button class="calc-btn calc-del" onclick="calcDelete()">⌫</button>
+            <button class="calc-btn calc-op" onclick="calcInput('%')">%</button>
+            <button class="calc-btn calc-op" onclick="calcInput('÷')">÷</button>
+
+            <button class="calc-btn calc-num" onclick="calcInput('7')">7</button>
+            <button class="calc-btn calc-num" onclick="calcInput('8')">8</button>
+            <button class="calc-btn calc-num" onclick="calcInput('9')">9</button>
+            <button class="calc-btn calc-op" onclick="calcInput('×')">×</button>
+
+            <button class="calc-btn calc-num" onclick="calcInput('4')">4</button>
+            <button class="calc-btn calc-num" onclick="calcInput('5')">5</button>
+            <button class="calc-btn calc-num" onclick="calcInput('6')">6</button>
+            <button class="calc-btn calc-op" onclick="calcInput('−')">−</button>
+
+            <button class="calc-btn calc-num" onclick="calcInput('1')">1</button>
+            <button class="calc-btn calc-num" onclick="calcInput('2')">2</button>
+            <button class="calc-btn calc-num" onclick="calcInput('3')">3</button>
+            <button class="calc-btn calc-op" onclick="calcInput('+')">+</button>
+
+            <button class="calc-btn calc-num calc-zero" onclick="calcInput('0')">0</button>
+            <button class="calc-btn calc-num" onclick="calcInput('.')">.</button>
+            <button class="calc-btn calc-equals" onclick="calcEvaluate()">=</button>
+        </div>
+        <div class="calc-deg-rad">
+            <button class="calc-dr-btn active" id="calc-deg-btn" onclick="setCalcAngleMode('deg')">DEG</button>
+            <button class="calc-dr-btn" id="calc-rad-btn" onclick="setCalcAngleMode('rad')">RAD</button>
         </div>
     </div>
 
