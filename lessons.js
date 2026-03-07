@@ -920,7 +920,14 @@ export const lessonPaths = {
             { id: 'law-of-sines', title: 'Law of Sines', subtitle: 'Solving non-right triangles', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Law of Sines</h3><p>For any triangle with sides a, b, c opposite angles A, B, C:</p><p style="text-align:center;"><strong>a/sin A = b/sin B = c/sin C</strong></p><p>Use when you know: (1) two angles and one side (AAS or ASA), or (2) two sides and an angle opposite one of them (SSA — the ambiguous case).</p>` },
                 { type: 'example', title: 'Finding a Side', content: `<p>A = 40°, B = 60°, a = 8. Find b. C = 180° − 40° − 60° = 80°. b/sin 60° = 8/sin 40°. b = 8 sin 60°/sin 40° ≈ <strong>10.78</strong>.</p>` },
+                { type: 'interactive_steps', title: 'Guided: A = 35°, B = 70°, a = 10. Find b.', description: 'Set up and solve using the Law of Sines.', steps: [
+                    { text: 'First, find C: 180° − 35° − 70° = {blank}°', answer: '75', hint: 'Angles in a triangle sum to 180°' },
+                    { text: 'Set up the proportion: a/sin A = b/sin B → 10/sin 35° = b/sin {blank}°', answer: '70', hint: 'We want to find b, which is opposite angle B' },
+                    { text: 'Cross multiply: b = 10 · sin 70° / sin {blank}°', answer: '35', hint: 'sin A = sin 35°' },
+                    { text: 'sin 70° ≈ 0.940, sin 35° ≈ 0.574. b ≈ 10 × 0.940 / 0.574 ≈ {blank}', answer: '16.4', hint: '9.40 ÷ 0.574 ≈ ?' }
+                ], result: 'b ≈ 16.4' },
                 { type: 'generated_practice', generators: ['law-of-sines-calc'] },
+                { type: 'tips', content: `<h4>💡 Law of Sines vs Law of Cosines</h4><p>Use <strong>Law of Sines</strong> when you have: AAS, ASA, or SSA.</p><p>Use <strong>Law of Cosines</strong> when you have: SAS or SSS.</p><p><strong>Watch out:</strong> SSA can give 0, 1, or 2 triangles (the ambiguous case)!</p>` },
                 { type: 'practice', problems: [
                     { question: 'When is Law of Sines most useful?', choices: ['SAS', 'SSS', 'AAS or ASA', 'Right triangles only'], correctIndex: 2, explanation: 'Law of Sines excels with <strong>AAS or ASA</strong> configurations.' },
                     { question: 'In the Law of Sines, each ratio is:', choices: ['side/side', 'angle/angle', 'side/sin(opposite angle)', 'sin(angle)/sin(angle)'], correctIndex: 2, explanation: 'Each ratio is <strong>side / sin(opposite angle)</strong>.' },
@@ -955,8 +962,16 @@ export const lessonPaths = {
 
             // ---- 16. Area of a Triangle (Trig) ----
             { id: 'triangle-area-trig', title: 'Triangle Area with Trig', subtitle: 'Using sine to find area', xpReward: 40, sections: [
-                { type: 'text', content: `<h3>Trig Area Formula</h3><p>When you know two sides and the included angle: <strong>Area = ½ab sin C</strong>.</p><p>This is derived from the standard ½bh formula by noting that h = a sin C.</p>` },
+                { type: 'text', content: `<h3>Trig Area Formula</h3><p>When you know two sides and the included angle: <strong>Area = ½ab sin C</strong>.</p><p>This is derived from the standard ½bh formula by noting that h = a sin C.</p><p>This works for <em>any</em> triangle — not just right triangles.</p>` },
+                { type: 'example', title: 'Finding Area', content: `<p><strong>Given: a = 8, b = 6, C = 30°.</strong></p><p>Area = ½(8)(6)sin 30° = 24 × 0.5 = <strong>12</strong></p>` },
+                { type: 'interactive_steps', title: 'Guided: Find area when a = 10, b = 7, C = 60°', description: 'Plug into the formula step by step.', steps: [
+                    { text: 'Area = ½ · a · b · sin C = ½ · 10 · {blank} · sin 60°', answer: '7', hint: 'b = 7' },
+                    { text: '½ · 10 · 7 = {blank}', answer: '35', hint: '10 × 7 ÷ 2' },
+                    { text: 'sin 60° = √3/2 ≈ {blank}', answer: '0.866', hint: 'Recall the special angle value' },
+                    { text: 'Area = 35 × 0.866 ≈ {blank}', answer: '30.3', hint: '35 × 0.866 ≈ ?' }
+                ], result: 'Area ≈ 30.3 square units' },
                 { type: 'generated_practice', generators: ['triangle-area-trig'] },
+                { type: 'tips', content: `<h4>💡 When to Use This Formula</h4><p>Use Area = ½ab sin C whenever you have <strong>SAS</strong> (two sides and the included angle).</p><p>If C = 90°, sin 90° = 1, and the formula simplifies to the familiar ½bh.</p><p>If C = 0° or 180°, the area is 0 — the triangle degenerates to a line!</p>` },
                 { type: 'practice', problems: [
                     { question: 'a=8, b=6, C=30°. Area =', choices: ['12', '24', '48', '6'], correctIndex: 0, explanation: '½(8)(6)sin 30° = 24 × 0.5 = <strong>12</strong>.' },
                     { question: 'a=10, b=10, C=90°. Area =', choices: ['50', '100', '25', '200'], correctIndex: 0, explanation: '½(10)(10)sin 90° = 50 × 1 = <strong>50</strong>.' },
@@ -968,7 +983,16 @@ export const lessonPaths = {
             // ---- 17. Sum & Difference Identities ----
             { id: 'sum-difference', title: 'Sum & Difference Identities', subtitle: 'sin(A±B) and cos(A±B)', xpReward: 55, sections: [
                 { type: 'text', content: `<h3>Sum & Difference Formulas</h3><p><strong>sin(A + B) = sin A cos B + cos A sin B</strong></p><p><strong>sin(A − B) = sin A cos B − cos A sin B</strong></p><p><strong>cos(A + B) = cos A cos B − sin A sin B</strong></p><p><strong>cos(A − B) = cos A cos B + sin A sin B</strong></p><p>These let you find exact values for angles like 75° = 45° + 30°.</p>` },
+                { type: 'example', title: 'Finding sin 75°', content: `<p>sin 75° = sin(45° + 30°) = sin45·cos30 + cos45·sin30</p><p>= (√2/2)(√3/2) + (√2/2)(1/2) = √6/4 + √2/4 = <strong>(√6 + √2)/4</strong></p>` },
+                { type: 'interactive_steps', title: 'Guided: Find cos 15° using cos(45° − 30°)', description: 'Apply the cosine difference formula.', steps: [
+                    { text: 'cos(A − B) = cos A cos B + sin A sin B. Here A = 45°, B = {blank}', answer: '30', hint: '45° − 30° = 15°' },
+                    { text: 'cos 45° = √2/2, cos 30° = {blank}', answer: '√3/2', hint: 'Recall the 30-60-90 triangle values' },
+                    { text: 'sin 45° = √2/2, sin 30° = {blank}', answer: '1/2', hint: 'sin 30° is the simplest special value' },
+                    { text: 'cos45·cos30 = (√2/2)(√3/2) = {blank}', answer: '√6/4', hint: '√2 × √3 = √6, and 2 × 2 = 4' },
+                    { text: 'sin45·sin30 = (√2/2)(1/2) = {blank}', answer: '√2/4', hint: '√2 × 1 = √2, denominator = 4' }
+                ], result: 'cos 15° = √6/4 + √2/4 = (√6 + √2)/4' },
                 { type: 'generated_practice', generators: ['sum-formula-apply'] },
+                { type: 'tips', content: `<h4>💡 Memory Tricks</h4><p><strong>Sine:</strong> "sine-cosine-cosine-sine" — sin(A±B) mixes sin and cos, and the ± sign matches.</p><p><strong>Cosine:</strong> "cosine-cosine-sine-sine" — cos(A±B) pairs same functions, but the sign <em>flips</em> (+ becomes − and vice versa).</p>` },
                 { type: 'practice', problems: [
                     { question: 'sin(A + B) =', choices: ['sin A sin B + cos A cos B', 'sin A cos B + cos A sin B', 'sin A cos B − cos A sin B', 'cos A cos B − sin A sin B'], correctIndex: 1, explanation: '<strong>sin A cos B + cos A sin B</strong>.' },
                     { question: 'cos(A + B) =', choices: ['cos A cos B − sin A sin B', 'cos A cos B + sin A sin B', 'sin A cos B + cos A sin B', 'sin A sin B − cos A cos B'], correctIndex: 0, explanation: '<strong>cos A cos B − sin A sin B</strong>.' },
@@ -979,8 +1003,16 @@ export const lessonPaths = {
 
             // ---- 18. Double-Angle Identities ----
             { id: 'double-angle', title: 'Double-Angle Identities', subtitle: 'sin 2θ and cos 2θ', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>Double-Angle Formulas</h3><p><strong>sin 2θ = 2 sin θ cos θ</strong></p><p><strong>cos 2θ = cos²θ − sin²θ = 2cos²θ − 1 = 1 − 2sin²θ</strong></p><p><strong>tan 2θ = 2tan θ / (1 − tan²θ)</strong></p>` },
+                { type: 'text', content: `<h3>Double-Angle Formulas</h3><p><strong>sin 2θ = 2 sin θ cos θ</strong></p><p><strong>cos 2θ = cos²θ − sin²θ = 2cos²θ − 1 = 1 − 2sin²θ</strong></p><p><strong>tan 2θ = 2tan θ / (1 − tan²θ)</strong></p><p>These are derived by applying the sum formulas with A = B = θ.</p>` },
+                { type: 'example', title: 'Using Double-Angle Formulas', content: `<p><strong>Given sin θ = 3/5 and cos θ = 4/5, find sin 2θ and cos 2θ:</strong></p><p>sin 2θ = 2(3/5)(4/5) = 24/25</p><p>cos 2θ = (4/5)² − (3/5)² = 16/25 − 9/25 = <strong>7/25</strong></p>` },
+                { type: 'interactive_steps', title: 'Guided: Find cos 2θ if sin θ = 5/13', description: 'Use the identity cos 2θ = 1 − 2sin²θ.', steps: [
+                    { text: 'First, find sin²θ: (5/13)² = {blank}', answer: '25/169', hint: 'Square the numerator and denominator separately' },
+                    { text: 'Plug into cos 2θ = 1 − 2sin²θ: 1 − 2({blank})', answer: '25/169', hint: 'Use your sin²θ value from step 1' },
+                    { text: '2 × 25/169 = {blank}', answer: '50/169', hint: 'Multiply 2 × 25 = 50, keep denominator' },
+                    { text: '1 − 50/169 = 169/169 − 50/169 = {blank}', answer: '119/169', hint: '169 − 50 = ?' }
+                ], result: 'cos 2θ = 119/169' },
                 { type: 'generated_practice', generators: ['trig-double-angle'] },
+                { type: 'tips', content: `<h4>💡 Which cos 2θ Form to Use?</h4><p>If you know <strong>only sin θ</strong>, use: cos 2θ = 1 − 2sin²θ.</p><p>If you know <strong>only cos θ</strong>, use: cos 2θ = 2cos²θ − 1.</p><p>If you know <strong>both</strong>, use: cos 2θ = cos²θ − sin²θ.</p>` },
                 { type: 'practice', problems: [
                     { question: 'sin 2θ =', choices: ['2 sin θ', '2 sin θ cos θ', 'sin²θ + cos²θ', 'sin θ + cos θ'], correctIndex: 1, explanation: '<strong>2 sin θ cos θ</strong>.' },
                     { question: 'cos 2θ = (choose one form)', choices: ['2cos²θ − 1', '2sin²θ + 1', 'cos θ − sin θ', '2cos θ sin θ'], correctIndex: 0, explanation: '<strong>2cos²θ − 1</strong> (also = cos²θ − sin²θ = 1 − 2sin²θ).' },
@@ -1175,9 +1207,17 @@ export const lessonPaths = {
 
             // ---- 6. Product Rule ----
             { id: 'product-rule', title: 'The Product Rule', subtitle: 'Differentiating products', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>Product Rule</h3><p>If h(x) = f(x)·g(x), then <strong>h′(x) = f′(x)g(x) + f(x)g′(x)</strong>.</p><p>Memory aid: "first times derivative of second PLUS second times derivative of first."</p>` },
+                { type: 'text', content: `<h3>Product Rule</h3><p>If h(x) = f(x)·g(x), then <strong>h′(x) = f′(x)g(x) + f(x)g′(x)</strong>.</p><p>You CANNOT just multiply the derivatives: (fg)′ ≠ f′g′. You must use the product rule.</p>` },
                 { type: 'example', title: 'Product Rule Example', content: `<p>h(x) = x² · sin(x). h′(x) = 2x·sin(x) + x²·cos(x).</p>` },
+                { type: 'interactive_steps', title: 'Guided: Differentiate h(x) = x³ · ln(x)', description: 'Apply the product rule: (fg)′ = f′g + fg′.', steps: [
+                    { text: 'Let f(x) = x³. Then f′(x) = {blank}', answer: '3x²', hint: 'Use the power rule' },
+                    { text: 'Let g(x) = ln(x). Then g′(x) = {blank}', answer: '1/x', hint: 'The derivative of ln(x) is...' },
+                    { text: 'f′g = 3x² · ln(x). fg′ = x³ · {blank}', answer: '1/x', hint: 'Plug in g′(x)' },
+                    { text: 'x³ · (1/x) simplifies to {blank}', answer: 'x²', hint: 'x³/x = ?' },
+                    { text: 'Final: h′(x) = 3x²ln(x) + {blank}', answer: 'x²', hint: 'From the previous step' }
+                ], result: 'h′(x) = 3x²ln(x) + x²' },
                 { type: 'generated_practice', generators: ['calc-product-rule'] },
+                { type: 'tips', content: `<h4>💡 Memory Aid</h4><p>"First times derivative of second PLUS second times derivative of first." Or think: <strong>f′g + fg′</strong>.</p><p>The order doesn't matter: f′g + fg′ = fg′ + f′g (addition is commutative).</p>` },
                 { type: 'practice', problems: [
                     { question: 'd/dx [x · eˣ] =', choices: ['eˣ', 'xeˣ', 'eˣ + xeˣ', 'xeˣ + eˣ'], correctIndex: 2, explanation: '1·eˣ + x·eˣ = <strong>eˣ + xeˣ</strong>.' },
                     { question: 'The product rule gives (fg)′ =', choices: ['f′g′', 'fg′ + f′g', 'f′g − fg′', 'f/g + g/f'], correctIndex: 1, explanation: '<strong>f′g + fg′</strong>.' },
@@ -1202,7 +1242,14 @@ export const lessonPaths = {
             { id: 'chain-rule', title: 'The Chain Rule', subtitle: 'Differentiating compositions', xpReward: 55, sections: [
                 { type: 'text', content: `<h3>Chain Rule</h3><p>If h(x) = f(g(x)), then <strong>h′(x) = f′(g(x)) · g′(x)</strong>.</p><p>"Derivative of the outer function (evaluated at the inner) times derivative of the inner."</p><p>This is probably the most-used derivative rule in calculus!</p>` },
                 { type: 'example', title: 'Chain Rule Example', content: `<p>h(x) = (3x + 1)⁵. Outer: u⁵, inner: 3x+1. h′(x) = 5(3x+1)⁴ · 3 = <strong>15(3x+1)⁴</strong>.</p>` },
+                { type: 'interactive_steps', title: 'Guided: Differentiate f(x) = sin(x²)', description: 'Identify the outer and inner functions, then apply the chain rule.', steps: [
+                    { text: 'The outer function is sin(u). Its derivative is {blank}', answer: 'cos(u)', hint: 'What is the derivative of sin?' },
+                    { text: 'The inner function u = x². Its derivative is {blank}', answer: '2x', hint: 'Use the power rule on x²' },
+                    { text: 'Chain rule: f′(x) = cos(x²) · {blank}', answer: '2x', hint: 'Multiply by the derivative of the inner' },
+                    { text: 'Final answer: f′(x) = {blank}', answer: '2xcos(x²)', hint: 'Put it all together: 2x · cos(x²)' }
+                ], result: 'f′(x) = 2x cos(x²) — outer derivative × inner derivative!' },
                 { type: 'generated_practice', generators: ['calc-chain-rule'] },
+                { type: 'tips', content: `<h4>💡 Common Mistakes</h4><p>The #1 chain rule mistake: <strong>forgetting to multiply by the inner derivative</strong>. d/dx[sin(3x)] is NOT cos(3x) — it's 3cos(3x).</p><p>Look for the chain rule whenever you see a "function inside a function": (...)ⁿ, sin(...), e^(...), ln(...), √(...).</p>` },
                 { type: 'practice', problems: [
                     { question: 'd/dx [sin(3x)] =', choices: ['cos(3x)', '3cos(3x)', '3sin(3x)', 'cos(x)·3'], correctIndex: 1, explanation: 'cos(3x)·3 = <strong>3cos(3x)</strong>.' },
                     { question: 'd/dx [e²ˣ] =', choices: ['e²ˣ', '2e²ˣ', '2xe²ˣ', 'e²ˣ/2'], correctIndex: 1, explanation: 'e²ˣ · 2 = <strong>2e²ˣ</strong>.' },
@@ -1215,7 +1262,15 @@ export const lessonPaths = {
             { id: 'implicit-diff', title: 'Implicit Differentiation', subtitle: 'When y isn\'t isolated', xpReward: 55, sections: [
                 { type: 'text', content: `<h3>Implicit Differentiation</h3><p>When y is defined implicitly (e.g., x² + y² = 25), differentiate both sides with respect to x, treating y as a function of x. Every time you differentiate a y-term, multiply by <strong>dy/dx</strong>. Then solve for dy/dx.</p>` },
                 { type: 'example', title: 'Circle Example', content: `<p>x² + y² = 25. Differentiate: 2x + 2y(dy/dx) = 0. Solve: dy/dx = <strong>−x/y</strong>.</p>` },
+                { type: 'interactive_steps', title: 'Guided: Find dy/dx for x³ + y³ = 6xy', description: 'Differentiate both sides, collect dy/dx terms, and solve.', steps: [
+                    { text: 'd/dx of x³ = {blank}', answer: '3x²', hint: 'Power rule on x³' },
+                    { text: 'd/dx of y³ = 3y² · {blank} (chain rule — y is a function of x)', answer: 'dy/dx', hint: 'Multiply by dy/dx when differentiating y' },
+                    { text: 'd/dx of 6xy = 6y + 6x·{blank} (product rule)', answer: 'dy/dx', hint: 'd/dx of y = dy/dx' },
+                    { text: 'Equation: 3x² + 3y²(dy/dx) = 6y + 6x(dy/dx). Collect dy/dx terms on one side: 3y²(dy/dx) − 6x(dy/dx) = {blank}', answer: '6y-3x²', hint: 'Move non-dy/dx terms to the right' },
+                    { text: 'Factor: (3y² − 6x)(dy/dx) = 6y − 3x². So dy/dx = {blank}', answer: '(6y-3x²)/(3y²-6x)', hint: 'Divide both sides by (3y² − 6x)' }
+                ], result: 'dy/dx = (6y − 3x²)/(3y² − 6x) = (2y − x²)/(y² − 2x)' },
                 { type: 'generated_practice', generators: ['calc-implicit-diff'] },
+                { type: 'tips', content: `<h4>💡 Key Rules</h4><p>1. Every time you differentiate a <strong>y</strong> term, tack on <strong>dy/dx</strong>.</p><p>2. Use the <strong>product rule</strong> for terms like xy (since both depend on x).</p><p>3. After differentiating, <strong>collect all dy/dx terms</strong> on one side, factor, and divide.</p>` },
                 { type: 'practice', problems: [
                     { question: 'Differentiate x² + y² = 16 implicitly. dy/dx =', choices: ['−x/y', 'x/y', '−y/x', '−2x'], correctIndex: 0, explanation: '2x + 2y(dy/dx) = 0 → dy/dx = <strong>−x/y</strong>.' },
                     { question: 'When differentiating y³ with respect to x, you get:', choices: ['3y²', '3y²(dy/dx)', '3x²', 'y³(dy/dx)'], correctIndex: 1, explanation: 'Chain rule: 3y² · dy/dx = <strong>3y²(dy/dx)</strong>.' },
@@ -1310,9 +1365,18 @@ export const lessonPaths = {
 
             // ---- 17. U-Substitution ----
             { id: 'u-substitution', title: 'U-Substitution', subtitle: 'The chain rule in reverse', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>U-Substitution</h3><p>This is the integration counterpart of the chain rule. Steps: (1) Choose u = inner function. (2) Find du = u′dx. (3) Rewrite the integral in terms of u and du. (4) Integrate. (5) Substitute back.</p>` },
+                { type: 'text', content: `<h3>U-Substitution</h3><p>This is the integration counterpart of the chain rule. When you see a composite function inside an integral, u-sub can simplify it.</p>` },
+                { type: 'steps', title: 'The U-Sub Process', steps: ['Choose u = the inner function (the part "inside" another function).', 'Compute du/dx and solve for dx.', 'Rewrite the entire integral in terms of u and du.', 'Integrate with respect to u.', 'Substitute back to the original variable x.'] },
                 { type: 'example', title: 'U-Sub Example', content: `<p>∫2x(x²+1)³ dx. Let u = x²+1, du = 2x dx. ∫u³ du = u⁴/4 + C = <strong>(x²+1)⁴/4 + C</strong>.</p>` },
+                { type: 'interactive_steps', title: 'Guided: Evaluate ∫cos(3x) dx', description: 'Find the right substitution and integrate.', steps: [
+                    { text: 'The inner function is 3x. Let u = {blank}', answer: '3x', hint: 'What\'s inside the cos?' },
+                    { text: 'Then du/dx = 3, so du = {blank} dx', answer: '3', hint: 'Differentiate 3x' },
+                    { text: 'Solve for dx: dx = du/{blank}', answer: '3', hint: 'Rearrange du = 3dx' },
+                    { text: 'Rewrite: (1/3)∫cos(u) du = (1/3){blank} + C', answer: 'sin(u)', hint: '∫cos(u) du = ?' },
+                    { text: 'Substitute back: {blank}/3 + C', answer: 'sin(3x)', hint: 'Replace u with 3x' }
+                ], result: '∫cos(3x) dx = sin(3x)/3 + C' },
                 { type: 'generated_practice', generators: ['calc-u-sub'] },
+                { type: 'tips', content: `<h4>💡 How to Pick u</h4><p>Look for a function and its derivative nearby. In ∫xe^(x²)dx, the x is the derivative of x² (off by a constant) — so u = x².</p><p><strong>Common pattern:</strong> if you see f(g(x)) · g′(x), then u = g(x).</p><p><strong>Don't forget:</strong> for definite integrals, either change the limits to u-values OR substitute back before evaluating.</p>` },
                 { type: 'practice', problems: [
                     { question: '∫cos(3x) dx. Let u = 3x, du = 3dx. Result:', choices: ['sin(3x) + C', 'sin(3x)/3 + C', '3sin(3x) + C', 'cos(3x)/3 + C'], correctIndex: 1, explanation: '(1/3)∫cos u du = (1/3)sin u + C = <strong>sin(3x)/3 + C</strong>.' },
                     { question: 'For ∫xe^(x²) dx, the best u is:', choices: ['u = x', 'u = eˣ', 'u = x²', 'u = xe^x'], correctIndex: 2, explanation: 'u = x², du = 2x dx. The x in front is part of du. Best choice: <strong>u = x²</strong>.' },
@@ -1323,8 +1387,17 @@ export const lessonPaths = {
 
             // ---- 18. Integration by Parts ----
             { id: 'integration-by-parts', title: 'Integration by Parts', subtitle: 'Product rule in reverse', xpReward: 55, sections: [
-                { type: 'text', content: `<h3>Integration by Parts</h3><p>Formula: <strong>∫u dv = uv − ∫v du</strong>.</p><p>Use <strong>LIATE</strong> to choose u: Logarithmic → Inverse trig → Algebraic → Trig → Exponential. Pick u from earlier in the list.</p>` },
+                { type: 'text', content: `<h3>Integration by Parts</h3><p>Formula: <strong>∫u dv = uv − ∫v du</strong>.</p><p>This technique handles integrals of products that u-sub can't touch.</p>` },
+                { type: 'text', content: `<h3>Choosing u and dv: LIATE</h3><p>Use <strong>LIATE</strong> to choose u — pick from earlier in this list:</p><p><strong>L</strong>ogarithmic → <strong>I</strong>nverse trig → <strong>A</strong>lgebraic → <strong>T</strong>rig → <strong>E</strong>xponential</p><p>Whatever you pick for u, everything else is dv.</p>` },
+                { type: 'interactive_steps', title: 'Guided: Evaluate ∫x·eˣ dx', description: 'Apply integration by parts step by step.', steps: [
+                    { text: 'Using LIATE, u = x (algebraic). So dv = {blank} dx', answer: 'eˣ', hint: 'Everything that\'s not u becomes dv' },
+                    { text: 'Differentiate u: du = {blank} dx', answer: '1', hint: 'What is d/dx of x?' },
+                    { text: 'Integrate dv: v = ∫eˣ dx = {blank}', answer: 'eˣ', hint: 'eˣ is its own antiderivative' },
+                    { text: 'Apply formula: uv − ∫v du = xeˣ − ∫{blank} dx', answer: 'eˣ', hint: 'v · du = eˣ · 1 dx' },
+                    { text: '= xeˣ − {blank} + C', answer: 'eˣ', hint: '∫eˣ dx = eˣ' }
+                ], result: '∫xeˣ dx = xeˣ − eˣ + C = eˣ(x − 1) + C' },
                 { type: 'generated_practice', generators: ['ibp-choose-u'] },
+                { type: 'tips', content: `<h4>💡 When to Use IBP vs U-Sub</h4><p>If you see a <strong>product of two different types</strong> (like x·eˣ or x·sin x), try IBP.</p><p>If you see a <strong>composition</strong> (like sin(x²) or e^(3x)), try u-sub first.</p><p><strong>Special case:</strong> ∫ln x dx — use u = ln x, dv = dx.</p>` },
                 { type: 'practice', problems: [
                     { question: '∫x·eˣ dx. Best choice for u:', choices: ['u = eˣ', 'u = x', 'u = xeˣ', 'u = 1'], correctIndex: 1, explanation: 'LIATE: x is Algebraic (before Exponential). <strong>u = x</strong>.' },
                     { question: 'The IBP formula is:', choices: ['∫u dv = uv + ∫v du', '∫u dv = uv − ∫v du', '∫u dv = u/v − ∫du/dv', '∫u dv = v du − ∫u dv'], correctIndex: 1, explanation: '<strong>∫u dv = uv − ∫v du</strong>.' },
@@ -1430,7 +1503,7 @@ export const lessonPaths = {
             ]},
 
             // ---- 27. Calculus Review ----
-            { id: 'calculus-review', title: 'Calculus Review', subtitle: 'dang bro calc is hard i could never', xpReward: 1000, sections: [
+            { id: 'calculus-review', title: 'Calculus Review', subtitle: 'Comprehensive problem solving', xpReward: 100, sections: [
                 { type: 'text', content: `<h3>Comprehensive Review</h3><p>This final lesson covers the major concepts: limits, derivatives (power, product, quotient, chain rules), applications (optimization, related rates), integrals (FTC, u-sub, by parts), and series.</p>` },
                 { type: 'generated_practice', generators: ['calc-power-rule'] },
                 { type: 'generated_practice', generators: ['calc-chain-rule'] },
