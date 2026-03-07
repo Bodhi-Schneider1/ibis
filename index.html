@@ -106,6 +106,9 @@
                 <button class="toggle-btn" onclick="showPracticeView()" id="practice-toggle" role="tab" aria-selected="false" aria-controls="practice-view">
                     ✏️ Practice
                 </button>
+                <button class="toggle-btn" onclick="showCramView()" id="cram-toggle" role="tab" aria-selected="false" aria-controls="cram-view">
+                    🧠 Cram
+                </button>
             </div>
 
             <!-- Learn View (Lesson Paths) -->
@@ -206,6 +209,16 @@
                         </div>
                         <span class="pac-arrow">→</span>
                     </button>
+                </div>
+
+                <!-- Lesson Search -->
+                <div class="lesson-search-section">
+                    <div class="lesson-search-bar">
+                        <svg class="lesson-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        <input type="text" id="lesson-search-input" placeholder="Search lessons... e.g. 'pythagorean' or 'derivatives'" oninput="filterLessonSearch(this.value)" autocomplete="off"/>
+                        <button class="lesson-search-clear hidden" id="lesson-search-clear" onclick="clearLessonSearch()">✕</button>
+                    </div>
+                    <div class="lesson-search-results hidden" id="lesson-search-results"></div>
                 </div>
 
                 <!-- Math Topics -->
@@ -329,7 +342,99 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Cram View -->
+            <div id="cram-view" class="hidden" role="tabpanel" aria-labelledby="cram-toggle">
+                <div class="welcome-section">
+                    <h2>🧠 Cram Mode</h2>
+                    <p>Focused 15-minute study session before a test</p>
+                </div>
+
+                <!-- Step 1: Pick Topic -->
+                <div class="cram-step" id="cram-step-1">
+                    <h3 class="cram-step-title"><span class="cram-step-num">1</span> What subject are you studying?</h3>
+                    <div class="cram-topic-grid">
+                        <button class="cram-topic-card" onclick="cramSelectTopic('algebra', this)">
+                            <span class="cram-topic-icon">📐</span>
+                            <span class="cram-topic-name">Algebra</span>
+                        </button>
+                        <button class="cram-topic-card" onclick="cramSelectTopic('geometry', this)">
+                            <span class="cram-topic-icon">📏</span>
+                            <span class="cram-topic-name">Geometry</span>
+                        </button>
+                        <button class="cram-topic-card" onclick="cramSelectTopic('trigonometry', this)">
+                            <span class="cram-topic-icon">📊</span>
+                            <span class="cram-topic-name">Trigonometry</span>
+                        </button>
+                        <button class="cram-topic-card" onclick="cramSelectTopic('calculus', this)">
+                            <span class="cram-topic-icon">∫</span>
+                            <span class="cram-topic-name">Calculus</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Describe Your Test -->
+                <div class="cram-step hidden" id="cram-step-2">
+                    <h3 class="cram-step-title"><span class="cram-step-num">2</span> What's on the test?</h3>
+                    <p class="cram-step-desc">Search for the topics on your test and add them below.</p>
+                    <div class="cram-search-wrap">
+                        <input type="text" id="cram-test-input" class="cram-test-input" placeholder="e.g. &quot;Pythagorean theorem and triangles&quot; or &quot;Chapter 5 midterm&quot;" oninput="cramSearchLessons(this.value)" autocomplete="off"/>
+                        <div class="cram-search-dropdown hidden" id="cram-search-dropdown"></div>
+                    </div>
+                    <div class="cram-selected-chips" id="cram-selected-chips"></div>
+                    <div class="cram-actions">
+                        <button class="cram-btn-secondary" onclick="cramBack(1)">← Back</button>
+                        <button class="cram-btn-primary" id="cram-start-diag" onclick="cramStartDiagnostic()" disabled>Next: Quick Diagnostic →</button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Diagnostic Quiz -->
+                <div class="cram-step hidden" id="cram-step-3">
+                    <div class="cram-diag-header">
+                        <h3 class="cram-step-title"><span class="cram-step-num">3</span> Quick diagnostic</h3>
+                        <p class="cram-step-desc">5 questions to find your weak spots. Don't guess — it's okay to get them wrong!</p>
+                    </div>
+                    <div class="cram-diag-progress">
+                        <span id="cram-diag-progress-text">1 / 5</span>
+                        <div class="cram-diag-bar"><div class="cram-diag-fill" id="cram-diag-fill"></div></div>
+                    </div>
+                    <div class="cram-diag-question" id="cram-diag-question"></div>
+                    <div class="cram-diag-choices" id="cram-diag-choices"></div>
+                    <div class="cram-diag-feedback hidden" id="cram-diag-feedback"></div>
+                    <button class="cram-btn-primary hidden" id="cram-diag-next" onclick="cramNextDiagnostic()">Next →</button>
+                </div>
+
+                <!-- Step 4: Plan Preview -->
+                <div class="cram-step hidden" id="cram-step-4">
+                    <h3 class="cram-step-title"><span class="cram-step-num">✓</span> Your study plan is ready</h3>
+                    <div class="cram-plan-stats">
+                        <div class="cram-stat"><span class="cram-stat-val" id="cram-plan-blocks">0</span><span class="cram-stat-lbl">study blocks</span></div>
+                        <div class="cram-stat"><span class="cram-stat-val" id="cram-plan-time">0</span><span class="cram-stat-lbl">minutes</span></div>
+                        <div class="cram-stat"><span class="cram-stat-val" id="cram-plan-focus">0</span><span class="cram-stat-lbl">weak areas</span></div>
+                    </div>
+                    <div class="cram-plan-timeline" id="cram-plan-timeline"></div>
+                    <div class="cram-actions">
+                        <button class="cram-btn-secondary" onclick="cramBack(1)">Start Over</button>
+                        <button class="cram-btn-primary cram-btn-go" onclick="cramStartSession()">🚀 Start Cramming</button>
+                    </div>
+                </div>
+            </div>
         </main>
+
+        <!-- Cram Session View (active cramming, outside main) -->
+        <div class="cram-session hidden" id="cram-session">
+            <div class="cram-session-container">
+                <div class="cram-session-header">
+                    <button class="cram-quit-btn" onclick="cramQuit()">✕ Quit</button>
+                    <div class="cram-session-progress">
+                        <span class="cram-session-label" id="cram-session-label">Block 1 of 5</span>
+                        <div class="cram-session-bar"><div class="cram-session-fill" id="cram-session-fill"></div></div>
+                    </div>
+                    <div class="cram-session-timer" id="cram-session-timer">⏱ <span id="cram-timer-val">0:00</span></div>
+                </div>
+                <div class="cram-block-area" id="cram-block-area"></div>
+            </div>
+        </div>
 
         <!-- Lesson Path View -->
         <div class="path-view hidden" id="path-view">
@@ -602,6 +707,11 @@
                 </div>
 
                 <!-- Session Actions -->
+                <div class="kb-shortcut-hint hidden" id="kb-shortcut-hint">
+                    <span class="kb-hint-item"><kbd>A</kbd><kbd>B</kbd><kbd>C</kbd><kbd>D</kbd> answer</span>
+                    <span class="kb-hint-item"><kbd>Enter</kbd> next</span>
+                    <span class="kb-hint-item"><kbd>Q</kbd> quit</span>
+                </div>
                 <div class="session-actions">
                     <button class="next-btn hidden" id="next-problem-btn" onclick="nextProblem()">
                         Next Problem →
