@@ -1745,6 +1745,7 @@ window.openLessonFromPath = openLessonFromPath;
 window.closeLessonToPath = closeLessonToPath;
 window.completeLesson = completeLesson;
 window.handleLessonPractice = handleLessonPractice;
+window.handleInteractiveStep = handleInteractiveStep;
 window.selectChoice = selectChoice;
 window.nextProblem = nextProblem;
 window.quitSession = quitSession;
@@ -2226,6 +2227,7 @@ async function openLessonFromPath(topic, lessonId) {
 
     let contentHtml = '';
     let practiceGlobalIndex = 0;
+    let _interactiveStepsCount = 0;
     const seenLessonQuestions = new Set(); // Track all questions to prevent duplicates
 
     // --- SVG Visual injection: get a diagram for this lesson if one is defined ---
@@ -2272,6 +2274,39 @@ async function openLessonFromPath(topic, lessonId) {
                                 <div class="step-text">${step}</div>
                             </div>
                         `).join('')}
+                    </div>
+                </div>
+            `;
+        } else if (section.type === 'interactive_steps') {
+            const isIdx = _interactiveStepsCount++;
+            contentHtml += `
+                <div class="lesson-isteps-block" id="isteps-block-${isIdx}">
+                    <h4 class="isteps-title">✍️ ${section.title}</h4>
+                    <p class="isteps-desc">${section.description || 'Fill in the blanks as you work through each step.'}</p>
+                    <div class="isteps-container">
+                        ${section.steps.map((step, si) => {
+                            const stepId = `istep-${isIdx}-${si}`;
+                            const isFirst = si === 0;
+                            return `
+                            <div class="istep-item ${isFirst ? '' : 'istep-locked'}" id="${stepId}">
+                                <div class="istep-num">${si + 1}</div>
+                                <div class="istep-content">
+                                    <div class="istep-text">${step.text.replace('{blank}', `<span class="istep-blank-wrap">
+                                        <input type="text" class="istep-input" id="${stepId}-input" placeholder="?" autocomplete="off"
+                                            data-answer="${escapeHtml(String(step.answer))}"
+                                            data-block="${isIdx}" data-step="${si}"
+                                            onkeydown="if(event.key==='Enter')handleInteractiveStep(${isIdx},${si})"/>
+                                        <button class="istep-check-btn" onclick="handleInteractiveStep(${isIdx},${si})">Check</button>
+                                    </span>`)}</div>
+                                    ${step.hint ? `<div class="istep-hint hidden" id="${stepId}-hint">💡 ${step.hint}</div>` : ''}
+                                    <div class="istep-feedback hidden" id="${stepId}-fb"></div>
+                                </div>
+                            </div>`;
+                        }).join('')}
+                    </div>
+                    <div class="isteps-result hidden" id="isteps-result-${isIdx}">
+                        <span class="isteps-result-icon">✅</span>
+                        <span class="isteps-result-text">${section.result || 'Great work!'}</span>
                     </div>
                 </div>
             `;
@@ -2426,6 +2461,68 @@ async function openLessonFromPath(topic, lessonId) {
         }
     } else {
         hideCalcFab();
+    }
+}
+
+// Handle interactive fill-in-the-blank step
+function handleInteractiveStep(blockIdx, stepIdx) {
+    const stepId = `istep-${blockIdx}-${stepIdx}`;
+    const inputEl = document.getElementById(`${stepId}-input`);
+    const fbEl = document.getElementById(`${stepId}-fb`);
+    const stepEl = document.getElementById(stepId);
+    if (!inputEl || !fbEl) return;
+
+    const userAnswer = inputEl.value.trim().toLowerCase().replace(/\s+/g, '');
+    const correctAnswer = inputEl.dataset.answer.toLowerCase().replace(/\s+/g, '');
+
+    if (!userAnswer) {
+        // Show hint if available
+        const hintEl = document.getElementById(`${stepId}-hint`);
+        if (hintEl) hintEl.classList.remove('hidden');
+        inputEl.focus();
+        return;
+    }
+
+    fbEl.classList.remove('hidden');
+
+    // Check answer (allow some flexibility: strip spaces, case insensitive)
+    // Also accept minor variants (e.g. "2x" matches "2x")
+    const isCorrect = userAnswer === correctAnswer
+        || userAnswer.replace(/[×·*]/g, '') === correctAnswer.replace(/[×·*]/g, '')
+        || userAnswer.replace(/−/g, '-') === correctAnswer.replace(/−/g, '-');
+
+    if (isCorrect) {
+        inputEl.classList.add('istep-correct');
+        inputEl.disabled = true;
+        fbEl.innerHTML = '✅ Correct!';
+        fbEl.className = 'istep-feedback istep-fb-correct';
+        stepEl.classList.add('istep-done');
+
+        // Hide the check button
+        const checkBtn = stepEl.querySelector('.istep-check-btn');
+        if (checkBtn) checkBtn.classList.add('hidden');
+
+        // Unlock next step
+        const nextStepEl = document.getElementById(`istep-${blockIdx}-${stepIdx + 1}`);
+        if (nextStepEl) {
+            nextStepEl.classList.remove('istep-locked');
+            const nextInput = nextStepEl.querySelector('.istep-input');
+            if (nextInput) setTimeout(() => nextInput.focus(), 300);
+        } else {
+            // All steps done — show result
+            const resultEl = document.getElementById(`isteps-result-${blockIdx}`);
+            if (resultEl) resultEl.classList.remove('hidden');
+        }
+    } else {
+        inputEl.classList.add('istep-wrong');
+        fbEl.innerHTML = `❌ Not quite. Try again!`;
+        fbEl.className = 'istep-feedback istep-fb-wrong';
+        // Show hint
+        const hintEl = document.getElementById(`${stepId}-hint`);
+        if (hintEl) hintEl.classList.remove('hidden');
+        // Remove wrong class after a moment so they can retry
+        setTimeout(() => inputEl.classList.remove('istep-wrong'), 800);
+        inputEl.select();
     }
 }
 
