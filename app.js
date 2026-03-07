@@ -784,7 +784,11 @@ function _initCalcDrag() {
 }
 
 // Init drag on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', _initCalcDrag);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initCalcDrag);
+} else {
+    _initCalcDrag();
+}
 
 // Keyboard support — only when calc panel is visible
 document.addEventListener('keydown', (e) => {
@@ -810,6 +814,64 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// Keyboard shortcuts for practice sessions (A/B/C/D to answer, Enter for next, Q to quit)
+document.addEventListener('keydown', (e) => {
+    // Don't capture if user is typing in an input/textarea
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    // Only active during practice sessions
+    const sessionEl = document.getElementById('practice-session');
+    if (!sessionEl || sessionEl.classList.contains('hidden')) return;
+
+    // If calculator is open and this is a calc key, let that handler take it
+    const calcPanel = document.getElementById('calc-panel');
+    if (calcPanel && !calcPanel.classList.contains('hidden') && /^[0-9.+\-*/^()%=]$/.test(e.key)) return;
+
+    const key = e.key.toUpperCase();
+
+    // A/B/C/D → select answer choice
+    if (['A','B','C','D'].includes(key) && !sessionState.answered) {
+        const idx = key.charCodeAt(0) - 65; // A=0, B=1, C=2, D=3
+        const btns = document.querySelectorAll('.choice-btn');
+        if (btns[idx]) {
+            selectChoice(btns[idx]);
+            btns[idx].classList.add('kb-selected');
+            e.preventDefault();
+        }
+    }
+
+    // 1/2/3/4 → also select answer choice (alternative)
+    if (['1','2','3','4'].includes(e.key) && !sessionState.answered) {
+        const calcOpen = calcPanel && !calcPanel.classList.contains('hidden');
+        if (!calcOpen) {
+            const idx = parseInt(e.key) - 1;
+            const btns = document.querySelectorAll('.choice-btn');
+            if (btns[idx]) {
+                selectChoice(btns[idx]);
+                btns[idx].classList.add('kb-selected');
+                e.preventDefault();
+            }
+        }
+    }
+
+    // Enter or Space → next problem (when answered)
+    if ((e.key === 'Enter' || e.key === ' ') && sessionState.answered) {
+        const calcOpen = calcPanel && !calcPanel.classList.contains('hidden');
+        if (e.key === 'Enter' && calcOpen) return; // let calc handle Enter
+        const nextBtn = document.getElementById('next-problem-btn');
+        if (nextBtn && !nextBtn.classList.contains('hidden')) {
+            nextProblem();
+            e.preventDefault();
+        }
+    }
+
+    // Q to quit session
+    if (key === 'Q' && !e.ctrlKey && !e.metaKey) {
+        quitSession();
+        e.preventDefault();
+    }
+});
+
 // Make functions globally available
 window.toggleCalculator = toggleCalculator;
 window.toggleCalcMode = toggleCalcMode;
@@ -831,6 +893,835 @@ function showToast(message, type = 'success') {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 300);
     }, 3000);
+}
+
+// ============================================================
+// CRAM MODE ENGINE
+// ============================================================
+
+let cramState = {
+    topic: null,
+    selectedLessons: [],
+    diagnosticProblems: [],
+    diagnosticAnswers: [],
+    diagIndex: 0,
+    diagAnswered: false,
+    plan: [],
+    currentBlock: 0,
+    blockState: null,
+    startTime: null,
+    totalProblems: 0,
+    totalCorrect: 0,
+    weakAreas: [],
+};
+
+function cramReset() {
+    cramState = {
+        topic: null, selectedLessons: [], diagnosticProblems: [],
+        diagnosticAnswers: [], diagIndex: 0, diagAnswered: false,
+        plan: [], currentBlock: 0, blockState: null, startTime: null,
+        totalProblems: 0, totalCorrect: 0, weakAreas: [],
+    };
+    [1,2,3,4].forEach(n => document.getElementById(`cram-step-${n}`).classList.add('hidden'));
+    document.getElementById('cram-step-1').classList.remove('hidden');
+    document.querySelectorAll('.cram-topic-card').forEach(c => c.classList.remove('active'));
+}
+
+function cramSelectTopic(topic, btn) {
+    cramState.topic = topic;
+    cramState.selectedLessons = [];
+    document.querySelectorAll('.cram-topic-card').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+
+    // Clear step 2 state
+    const input = document.getElementById('cram-test-input');
+    if (input) input.value = '';
+    const dropdown = document.getElementById('cram-search-dropdown');
+    if (dropdown) { dropdown.innerHTML = ''; dropdown.classList.add('hidden'); }
+    cramRenderSelectedChips();
+
+    document.getElementById('cram-step-1').classList.add('hidden');
+    document.getElementById('cram-step-2').classList.remove('hidden');
+    document.getElementById('cram-test-input').focus();
+    cramUpdateDiagBtn();
+}
+
+// --- Step 2: Search-based lesson selection ---
+function cramSearchLessons(query) {
+    const dropdown = document.getElementById('cram-search-dropdown');
+    if (!dropdown) return;
+    const q = (query || '').trim().toLowerCase();
+    if (q.length < 2) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; return; }
+
+    const topic = cramState.topic;
+    if (!topic || !lessonPaths[topic]) { dropdown.classList.add('hidden'); return; }
+
+    const lessons = lessonPaths[topic].lessons;
+
+    // Match by title, subtitle, or id keywords — show ALL lessons (not just ones with generators)
+    const results = lessons.filter(l => {
+        if (cramState.selectedLessons.includes(l.id)) return false; // already added
+        const title = (l.title || '').toLowerCase();
+        const subtitle = (l.subtitle || '').toLowerCase();
+        const id = (l.id || '').toLowerCase();
+        return title.includes(q) || subtitle.includes(q) || id.includes(q);
+    });
+
+    if (results.length === 0) {
+        dropdown.innerHTML = '<div class="cram-dd-empty">No matching lessons found</div>';
+        dropdown.classList.remove('hidden');
+        return;
+    }
+
+    dropdown.innerHTML = results.slice(0, 8).map(l => {
+        // Check if this lesson has generators
+        let genCount = 0;
+        (l.sections || []).forEach(s => {
+            if (s.type === 'generated_practice') genCount += (s.generators || []).length;
+        });
+        const badge = genCount > 0 ? '' : '<span class="cram-dd-badge">review only</span>';
+        return `<button class="cram-dd-item" onclick="cramAddLesson('${l.id}')">
+            <span class="cram-dd-title">${escapeHtml(l.title)} ${badge}</span>
+            <span class="cram-dd-sub">${escapeHtml(l.subtitle)}</span>
+        </button>`;
+    }).join('');
+    dropdown.classList.remove('hidden');
+}
+
+// Module-scoped event listener as backup for the inline oninput handler
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _initCramInputListener);
+} else {
+    _initCramInputListener();
+}
+function _initCramInputListener() {
+    const cramInput = document.getElementById('cram-test-input');
+    if (cramInput) {
+        cramInput.addEventListener('input', (e) => cramSearchLessons(e.target.value));
+    }
+}
+
+function cramAddLesson(lessonId) {
+    if (!cramState.selectedLessons.includes(lessonId)) {
+        cramState.selectedLessons.push(lessonId);
+    }
+    document.getElementById('cram-test-input').value = '';
+    document.getElementById('cram-search-dropdown').classList.add('hidden');
+    cramRenderSelectedChips();
+    cramUpdateDiagBtn();
+    document.getElementById('cram-test-input').focus();
+}
+
+function cramRemoveLesson(lessonId) {
+    cramState.selectedLessons = cramState.selectedLessons.filter(id => id !== lessonId);
+    cramRenderSelectedChips();
+    cramUpdateDiagBtn();
+}
+
+function cramRenderSelectedChips() {
+    const el = document.getElementById('cram-selected-chips');
+    const topic = cramState.topic;
+    if (!topic || cramState.selectedLessons.length === 0) {
+        el.innerHTML = '<p class="cram-chips-empty">Search above to add topics to your cram session</p>';
+        return;
+    }
+    el.innerHTML = cramState.selectedLessons.map(id => {
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === id);
+        return lesson ? `<span class="cram-sel-chip">
+            ${escapeHtml(lesson.title)}
+            <button class="cram-chip-remove" onclick="cramRemoveLesson('${id}')">✕</button>
+        </span>` : '';
+    }).join('');
+}
+
+function cramUpdateDiagBtn() {
+    const btn = document.getElementById('cram-start-diag');
+    const count = cramState.selectedLessons.length;
+    btn.disabled = count < 2;
+    btn.textContent = count < 2 ? `Add at least ${2 - count} more topic${2 - count !== 1 ? 's' : ''} →` : `Next: Quick Diagnostic (${count} topics) →`;
+}
+
+function cramBack(toStep) {
+    [1,2,3,4].forEach(n => document.getElementById(`cram-step-${n}`).classList.add('hidden'));
+    document.getElementById(`cram-step-${toStep}`).classList.remove('hidden');
+    if (toStep === 1) cramReset();
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('cram-search-dropdown');
+    const input = document.getElementById('cram-test-input');
+    if (dropdown && input && !dropdown.contains(e.target) && e.target !== input) {
+        dropdown.classList.add('hidden');
+    }
+});
+
+// --- Diagnostic Quiz ---
+function cramStartDiagnostic() {
+    const topic = cramState.topic;
+    const selectedIds = cramState.selectedLessons;
+
+    // Gather generators directly from lesson sections (not via subtopicMap)
+    const lessonGens = {};
+    lessonPaths[topic].lessons.forEach(lesson => {
+        if (!selectedIds.includes(lesson.id)) return;
+        const gens = [];
+        (lesson.sections || []).forEach(s => {
+            if (s.type === 'generated_practice') {
+                (s.generators || []).forEach(gId => { if (generators[gId]) gens.push(gId); });
+            }
+        });
+        if (gens.length > 0) lessonGens[lesson.id] = gens;
+    });
+
+    const lessonIds = Object.keys(lessonGens);
+    if (lessonIds.length === 0) {
+        showToast('Selected lessons have no practice problems. Try different topics.', 'error');
+        return;
+    }
+
+    const problems = [];
+    const seen = new Set();
+    const shuffledLessons = shuffle([...lessonIds]);
+    for (let i = 0; problems.length < 5 && i < 25; i++) {
+        const lid = shuffledLessons[i % shuffledLessons.length];
+        const gId = pickRandom(lessonGens[lid]);
+        try {
+            const p = generators[gId]();
+            const qKey = p.question.replace(/<[^>]+>/g, '').trim();
+            if (!seen.has(qKey) && p.choices && p.correctIndex >= 0) {
+                seen.add(qKey);
+                problems.push({ ...p, lessonId: lid, genId: gId });
+            }
+        } catch(e) {}
+    }
+
+    if (problems.length < 3) { showToast('Not enough problems — add more topics', 'error'); return; }
+
+    cramState.diagnosticProblems = problems;
+    cramState.diagnosticAnswers = [];
+    cramState.diagIndex = 0;
+    cramState.diagAnswered = false;
+
+    document.getElementById('cram-step-2').classList.add('hidden');
+    document.getElementById('cram-step-3').classList.remove('hidden');
+    cramShowDiagProblem(0);
+}
+
+function cramShowDiagProblem(idx) {
+    const prob = cramState.diagnosticProblems[idx];
+    const total = cramState.diagnosticProblems.length;
+    cramState.diagAnswered = false;
+
+    document.getElementById('cram-diag-progress-text').textContent = `${idx + 1} / ${total}`;
+    document.getElementById('cram-diag-fill').style.width = (idx / total * 100) + '%';
+    document.getElementById('cram-diag-question').innerHTML = prob.question;
+    renderMath(document.getElementById('cram-diag-question'));
+
+    const labels = ['A','B','C','D'];
+    const allChoices = [
+        { text: prob.choices[prob.correctIndex], correct: true },
+        ...prob.choices.filter((_,i) => i !== prob.correctIndex).map(t => ({ text: t, correct: false }))
+    ];
+    const shuffled = shuffle(allChoices);
+    document.getElementById('cram-diag-choices').innerHTML = shuffled.map((ch, i) =>
+        `<button class="cram-diag-choice" data-correct="${ch.correct}" onclick="cramDiagAnswer(this)">
+            <span class="choice-label">${labels[i]}</span>${ch.text}
+        </button>`
+    ).join('');
+    renderMath(document.getElementById('cram-diag-choices'));
+
+    document.getElementById('cram-diag-feedback').classList.add('hidden');
+    document.getElementById('cram-diag-next').classList.add('hidden');
+}
+
+function cramDiagAnswer(btn) {
+    if (cramState.diagAnswered) return;
+    cramState.diagAnswered = true;
+
+    const isCorrect = btn.dataset.correct === 'true';
+    const prob = cramState.diagnosticProblems[cramState.diagIndex];
+    cramState.diagnosticAnswers.push({ lessonId: prob.lessonId, correct: isCorrect });
+
+    document.querySelectorAll('.cram-diag-choice').forEach(b => {
+        b.classList.add('cram-diag-disabled');
+        if (b.dataset.correct === 'true') b.classList.add('cram-diag-correct');
+    });
+    if (!isCorrect) btn.classList.add('cram-diag-incorrect');
+
+    const fbEl = document.getElementById('cram-diag-feedback');
+    fbEl.classList.remove('hidden');
+    fbEl.innerHTML = isCorrect
+        ? `<span class="cram-diag-fb-icon">✅</span> Correct! ${prob.explanation}`
+        : `<span class="cram-diag-fb-icon">❌</span> ${prob.explanation}`;
+    renderMath(fbEl);
+
+    const nextBtn = document.getElementById('cram-diag-next');
+    nextBtn.classList.remove('hidden');
+    nextBtn.textContent = cramState.diagIndex >= cramState.diagnosticProblems.length - 1 ? 'See Your Plan →' : 'Next →';
+}
+
+function cramNextDiagnostic() {
+    cramState.diagIndex++;
+    if (cramState.diagIndex >= cramState.diagnosticProblems.length) {
+        cramBuildPlan();
+    } else {
+        cramShowDiagProblem(cramState.diagIndex);
+    }
+}
+
+// --- Plan Generation (now interleaves review, practice, and breather blocks) ---
+function cramBuildPlan() {
+    const topic = cramState.topic;
+    const selectedIds = cramState.selectedLessons;
+    const subtopicMap = getSubtopicMap();
+    const subtopics = subtopicMap[topic] || [];
+
+    const lessonScore = {};
+    selectedIds.forEach(id => { lessonScore[id] = { correct: 0, total: 0 }; });
+    cramState.diagnosticAnswers.forEach(a => {
+        if (lessonScore[a.lessonId]) {
+            lessonScore[a.lessonId].total++;
+            if (a.correct) lessonScore[a.lessonId].correct++;
+        }
+    });
+
+    const weak = [], medium = [], strong = [];
+    selectedIds.forEach(id => {
+        const s = lessonScore[id];
+        const st = subtopics.find(x => x.id === id);
+        if (!st || st.gens.length === 0) return;
+        if (s.total === 0) medium.push(id);
+        else if (s.correct === 0) weak.push(id);
+        else if (s.correct < s.total) medium.push(id);
+        else strong.push(id);
+    });
+
+    cramState.weakAreas = [...weak];
+
+    const plan = [];
+    let totalMinutes = 0;
+    const MAX_MINUTES = 18;
+    let practiceBlockCount = 0;
+
+    // Weak: review + practice (5 Qs)
+    weak.forEach(id => {
+        if (totalMinutes >= MAX_MINUTES) return;
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === id);
+        if (!lesson) return;
+        plan.push({ type: 'review', lessonId: id, title: lesson.title, minutes: 2 });
+        totalMinutes += 2;
+        if (totalMinutes < MAX_MINUTES) {
+            plan.push({ type: 'practice', lessonId: id, title: lesson.title, count: 5, minutes: 2 });
+            totalMinutes += 2;
+            practiceBlockCount++;
+            // Add a breather after every 2 practice blocks
+            if (practiceBlockCount % 2 === 0 && totalMinutes < MAX_MINUTES - 1) {
+                plan.push({ type: 'breather', minutes: 0.5 });
+                totalMinutes += 0.5;
+            }
+        }
+    });
+
+    // Medium: practice (4 Qs)
+    medium.forEach(id => {
+        if (totalMinutes >= MAX_MINUTES) return;
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === id);
+        if (!lesson) return;
+        plan.push({ type: 'practice', lessonId: id, title: lesson.title, count: 4, minutes: 2 });
+        totalMinutes += 2;
+        practiceBlockCount++;
+        if (practiceBlockCount % 2 === 0 && totalMinutes < MAX_MINUTES - 1) {
+            plan.push({ type: 'breather', minutes: 0.5 });
+            totalMinutes += 0.5;
+        }
+    });
+
+    // Strong: quick practice (2 Qs)
+    strong.forEach(id => {
+        if (totalMinutes >= MAX_MINUTES) return;
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === id);
+        if (!lesson) return;
+        plan.push({ type: 'practice', lessonId: id, title: lesson.title, count: 2, minutes: 1 });
+        totalMinutes += 1;
+    });
+
+    // Mixed review at the end if time remains
+    if (totalMinutes < MAX_MINUTES - 1 && selectedIds.length >= 2) {
+        const mixCount = Math.min(8, Math.floor((MAX_MINUTES - totalMinutes) * 2.5));
+        if (mixCount >= 3) {
+            plan.push({ type: 'mixed', title: 'Mixed Review', count: mixCount, minutes: Math.ceil(mixCount / 2.5) });
+            totalMinutes += Math.ceil(mixCount / 2.5);
+        }
+    }
+
+    cramState.plan = plan;
+
+    document.getElementById('cram-step-3').classList.add('hidden');
+    document.getElementById('cram-step-4').classList.remove('hidden');
+
+    const realBlocks = plan.filter(b => b.type !== 'breather');
+    document.getElementById('cram-plan-blocks').textContent = realBlocks.length;
+    document.getElementById('cram-plan-time').textContent = `~${Math.round(totalMinutes)}`;
+    document.getElementById('cram-plan-focus').textContent = weak.length;
+
+    const timeline = document.getElementById('cram-plan-timeline');
+    let num = 0;
+    timeline.innerHTML = plan.filter(b => b.type !== 'breather').map(b => {
+        num++;
+        const icon = b.type === 'review' ? '📖' : b.type === 'mixed' ? '🔀' : '✏️';
+        const typeLabel = b.type === 'review' ? 'Review' : b.type === 'mixed' ? 'Mixed Practice' : 'Practice';
+        const isWeak = weak.includes(b.lessonId);
+        return `<div class="cram-plan-block ${isWeak ? 'cram-plan-weak' : ''}">
+            <span class="cram-plan-num">${num}</span>
+            <span class="cram-plan-icon">${icon}</span>
+            <div class="cram-plan-info">
+                <span class="cram-plan-type">${typeLabel}${isWeak ? ' — weak area' : ''}</span>
+                <span class="cram-plan-title">${escapeHtml(b.title)}</span>
+            </div>
+            <span class="cram-plan-mins">~${b.minutes}m</span>
+        </div>`;
+    }).join('');
+}
+
+// --- Cram Session ---
+let _cramTimerInterval = null;
+let _cramTimerSeconds = 0;
+
+function cramStartSession() {
+    cramState.currentBlock = 0;
+    cramState.totalProblems = 0;
+    cramState.totalCorrect = 0;
+    cramState.startTime = Date.now();
+    _cramTimerSeconds = 0;
+
+    hideAllViews();
+    document.getElementById('cram-session').classList.remove('hidden');
+
+    if (_cramTimerInterval) clearInterval(_cramTimerInterval);
+    _cramTimerInterval = setInterval(() => {
+        _cramTimerSeconds++;
+        const m = Math.floor(_cramTimerSeconds / 60);
+        const s = _cramTimerSeconds % 60;
+        const el = document.getElementById('cram-timer-val');
+        if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+    }, 1000);
+
+    // Show calculator for relevant topics
+    if (shouldShowCalculator(cramState.topic, null)) {
+        showCalcFab();
+        if (['trigonometry', 'calculus'].includes(cramState.topic) && !_calcSciMode) toggleCalcMode();
+    }
+
+    cramShowBlock(0);
+}
+
+function cramShowBlock(idx) {
+    const plan = cramState.plan;
+    if (idx >= plan.length) { cramFinish(); return; }
+
+    cramState.currentBlock = idx;
+    const block = plan[idx];
+    const total = plan.length;
+    const realIdx = plan.slice(0, idx + 1).filter(b => b.type !== 'breather').length;
+    const realTotal = plan.filter(b => b.type !== 'breather').length;
+
+    document.getElementById('cram-session-label').textContent = block.type === 'breather' ? 'Quick Break' : `Block ${realIdx} of ${realTotal}`;
+    document.getElementById('cram-session-fill').style.width = (idx / total * 100) + '%';
+
+    const area = document.getElementById('cram-block-area');
+
+    if (block.type === 'review') cramShowReviewBlock(block, area);
+    else if (block.type === 'practice') cramShowPracticeBlock(block, area);
+    else if (block.type === 'mixed') cramShowMixedBlock(block, area);
+    else if (block.type === 'breather') cramShowBreather(area);
+}
+
+function cramShowBreather(area) {
+    const completed = cramState.plan.slice(0, cramState.currentBlock).filter(b => b.type !== 'breather').length;
+    const remaining = cramState.plan.slice(cramState.currentBlock + 1).filter(b => b.type !== 'breather').length;
+    const acc = cramState.totalProblems > 0 ? Math.round((cramState.totalCorrect / cramState.totalProblems) * 100) : 0;
+
+    const messages = [
+        "You're doing great — keep it up!",
+        "Take a breath. You've got this.",
+        "Halfway there! Stay focused.",
+        "Nice momentum! Keep going.",
+        "Almost there — finish strong!"
+    ];
+    const msg = messages[Math.min(Math.floor(completed / 2), messages.length - 1)];
+
+    area.innerHTML = `<div class="cram-breather">
+        <div class="cram-breather-emoji">🧘</div>
+        <h2 class="cram-breather-title">${msg}</h2>
+        <div class="cram-breather-stats">
+            <span>✅ ${cramState.totalCorrect}/${cramState.totalProblems} correct${cramState.totalProblems > 0 ? ` (${acc}%)` : ''}</span>
+            <span>📋 ${remaining} block${remaining !== 1 ? 's' : ''} remaining</span>
+        </div>
+        <button class="cram-btn-primary cram-breather-go" onclick="cramAdvanceBlock()">Keep Going →</button>
+    </div>`;
+    area.scrollTop = 0;
+}
+
+function cramShowReviewBlock(block, area) {
+    const topic = cramState.topic;
+    const lesson = lessonPaths[topic].lessons.find(l => l.id === block.lessonId);
+    if (!lesson) { cramAdvanceBlock(); return; }
+
+    let html = `<div class="cram-review-block">
+        <div class="cram-block-badge">📖 Review</div>
+        <h2 class="cram-review-title">${escapeHtml(lesson.title)}</h2>
+        <p class="cram-review-sub">${escapeHtml(lesson.subtitle)}</p>`;
+
+    const visual = getLessonVisual(topic, block.lessonId);
+    if (visual) html += `<div class="cram-review-visual">${visual}</div>`;
+
+    lesson.sections.forEach(s => {
+        if (s.type === 'text') html += `<div class="cram-review-text">${s.content}</div>`;
+        else if (s.type === 'example') html += `<div class="cram-review-example"><h4>📝 ${s.title}</h4>${s.content}</div>`;
+        else if (s.type === 'tips') html += `<div class="cram-review-tips">${s.content}</div>`;
+        else if (s.type === 'steps') html += `<div class="cram-review-steps"><h4>📋 ${s.title}</h4><ol>${s.steps.map(st => `<li>${st}</li>`).join('')}</ol></div>`;
+    });
+
+    html += `<button class="cram-btn-primary cram-block-next" onclick="cramAdvanceBlock()">Got it — Next Block →</button></div>`;
+    area.innerHTML = html;
+    renderMath(area);
+    area.scrollTop = 0;
+}
+
+function cramShowPracticeBlock(block, area) {
+    const topic = cramState.topic;
+    const subtopicMap = getSubtopicMap();
+    const st = (subtopicMap[topic] || []).find(s => s.id === block.lessonId);
+    if (!st || st.gens.length === 0) { cramAdvanceBlock(); return; }
+
+    const genIds = st.gens.filter(gId => generators[gId]);
+    const problems = [];
+    const seen = new Set();
+    for (let i = 0; problems.length < block.count && i < block.count * 5; i++) {
+        const gId = genIds[i % genIds.length];
+        try {
+            const p = generators[gId]();
+            const qKey = p.question.replace(/<[^>]+>/g, '').trim();
+            if (!seen.has(qKey)) { seen.add(qKey); problems.push(p); }
+        } catch(e) {}
+    }
+
+    if (problems.length === 0) { cramAdvanceBlock(); return; }
+    cramState.blockState = { problems, index: 0, correct: 0, answered: false };
+    cramRenderPracticeProblem(block.title, area);
+}
+
+function cramShowMixedBlock(block, area) {
+    const topic = cramState.topic;
+    const subtopicMap = getSubtopicMap();
+    const allGens = [];
+    cramState.selectedLessons.forEach(lid => {
+        const st = (subtopicMap[topic] || []).find(s => s.id === lid);
+        if (st) st.gens.forEach(gId => { if (generators[gId]) allGens.push(gId); });
+    });
+
+    const problems = [];
+    const seen = new Set();
+    const shuffledGens = shuffle([...allGens]);
+    for (let i = 0; problems.length < block.count && i < block.count * 5; i++) {
+        const gId = shuffledGens[i % shuffledGens.length];
+        try {
+            const p = generators[gId]();
+            const qKey = p.question.replace(/<[^>]+>/g, '').trim();
+            if (!seen.has(qKey)) { seen.add(qKey); problems.push(p); }
+        } catch(e) {}
+    }
+
+    if (problems.length === 0) { cramAdvanceBlock(); return; }
+    cramState.blockState = { problems, index: 0, correct: 0, answered: false };
+    cramRenderPracticeProblem(block.title, area);
+}
+
+function cramRenderPracticeProblem(blockTitle, area) {
+    const bs = cramState.blockState;
+    const prob = bs.problems[bs.index];
+    const total = bs.problems.length;
+    bs.answered = false;
+
+    const labels = ['A','B','C','D'];
+    const allChoices = [
+        { text: prob.choices[prob.correctIndex], correct: true },
+        ...prob.choices.filter((_,i) => i !== prob.correctIndex).map(t => ({ text: t, correct: false }))
+    ];
+    const shuffled = shuffle(allChoices);
+
+    area.innerHTML = `<div class="cram-practice-block">
+        <div class="cram-block-badge cram-badge-practice">✏️ Practice</div>
+        <div class="cram-practice-header">
+            <span class="cram-practice-title">${escapeHtml(blockTitle)}</span>
+            <span class="cram-practice-counter">${bs.index + 1} / ${total}</span>
+        </div>
+        <div class="cram-practice-bar"><div class="cram-practice-fill" style="width:${bs.index / total * 100}%"></div></div>
+        <div class="cram-practice-question">${prob.question}</div>
+        <div class="cram-practice-choices">${shuffled.map((ch, i) =>
+            `<button class="cram-choice" data-correct="${ch.correct}" onclick="cramPracticeAnswer(this)">
+                <span class="choice-label">${labels[i]}</span>${ch.text}
+            </button>`
+        ).join('')}</div>
+        <div class="cram-practice-feedback hidden" id="cram-practice-fb"></div>
+        <button class="cram-btn-primary hidden" id="cram-practice-next" onclick="cramPracticeNext()">Next →</button>
+    </div>`;
+    renderMath(area);
+    area.scrollTop = 0;
+}
+
+function cramPracticeAnswer(btn) {
+    const bs = cramState.blockState;
+    if (bs.answered) return;
+    bs.answered = true;
+
+    const isCorrect = btn.dataset.correct === 'true';
+    if (isCorrect) { bs.correct++; cramState.totalCorrect++; }
+    cramState.totalProblems++;
+
+    document.querySelectorAll('.cram-choice').forEach(b => {
+        b.classList.add('cram-choice-disabled');
+        if (b.dataset.correct === 'true') b.classList.add('cram-choice-correct');
+    });
+    if (!isCorrect) btn.classList.add('cram-choice-incorrect');
+
+    const prob = bs.problems[bs.index];
+    const fbEl = document.getElementById('cram-practice-fb');
+    fbEl.classList.remove('hidden');
+    fbEl.innerHTML = isCorrect
+        ? `<span class="cram-diag-fb-icon">✅</span> ${prob.explanation}`
+        : `<span class="cram-diag-fb-icon">❌</span> ${prob.explanation}`;
+    renderMath(fbEl);
+
+    const nextBtn = document.getElementById('cram-practice-next');
+    nextBtn.classList.remove('hidden');
+    nextBtn.textContent = bs.index >= bs.problems.length - 1 ? 'Next Block →' : 'Next →';
+}
+
+function cramPracticeNext() {
+    const bs = cramState.blockState;
+    bs.index++;
+    if (bs.index >= bs.problems.length) {
+        cramAdvanceBlock();
+    } else {
+        const block = cramState.plan[cramState.currentBlock];
+        cramRenderPracticeProblem(block.title, document.getElementById('cram-block-area'));
+    }
+}
+
+function cramAdvanceBlock() {
+    cramShowBlock(cramState.currentBlock + 1);
+}
+
+function cramFinish() {
+    if (_cramTimerInterval) { clearInterval(_cramTimerInterval); _cramTimerInterval = null; }
+    hideCalcFab();
+
+    const elapsed = Math.round((Date.now() - cramState.startTime) / 1000);
+    const minutes = Math.floor(elapsed / 60);
+    const seconds = elapsed % 60;
+    const accuracy = cramState.totalProblems > 0 ? Math.round((cramState.totalCorrect / cramState.totalProblems) * 100) : 0;
+    const topicNames = { algebra: 'Algebra', geometry: 'Geometry', trigonometry: 'Trigonometry', calculus: 'Calculus' };
+
+    let icon, title, subtitle;
+    if (accuracy >= 85) { icon = '🏆'; title = "You're ready!"; subtitle = "You crushed it. Go ace that test."; }
+    else if (accuracy >= 65) { icon = '💪'; title = 'Looking good!'; subtitle = "Solid foundation. Review your weak spots one more time if you can."; }
+    else { icon = '📚'; title = 'Keep studying!'; subtitle = 'Focus on the areas you struggled with. You can cram again anytime.'; }
+
+    const area = document.getElementById('cram-block-area');
+    area.innerHTML = `<div class="cram-summary">
+        <div class="cram-summary-icon">${icon}</div>
+        <h2 class="cram-summary-title">${title}</h2>
+        <p class="cram-summary-sub">${subtitle}</p>
+        <div class="cram-summary-stats">
+            <div class="cram-summary-stat"><span class="cram-ss-val">${topicNames[cramState.topic]}</span><span class="cram-ss-lbl">Subject</span></div>
+            <div class="cram-summary-stat"><span class="cram-ss-val">${minutes}:${seconds.toString().padStart(2,'0')}</span><span class="cram-ss-lbl">Time</span></div>
+            <div class="cram-summary-stat"><span class="cram-ss-val">${cramState.totalCorrect}/${cramState.totalProblems}</span><span class="cram-ss-lbl">Correct</span></div>
+            <div class="cram-summary-stat"><span class="cram-ss-val">${accuracy}%</span><span class="cram-ss-lbl">Accuracy</span></div>
+        </div>
+        ${cramState.weakAreas.length > 0 ? `<div class="cram-summary-weak"><strong>Weak areas to revisit:</strong> ${cramState.weakAreas.map(id => {
+            const l = lessonPaths[cramState.topic].lessons.find(x => x.id === id);
+            return l ? escapeHtml(l.title) : id;
+        }).join(', ')}</div>` : ''}
+        <div class="cram-summary-actions">
+            <button class="cram-btn-primary" onclick="cramAgain()">🧠 Cram Again</button>
+            <button class="cram-btn-secondary" onclick="cramBackToDashboard()">Back to Dashboard</button>
+        </div>
+    </div>`;
+
+    const user = auth.currentUser;
+    if (user && cramState.totalCorrect > 0) {
+        awardXP(user.uid, cramState.totalCorrect * 8);
+    }
+    if (accuracy >= 80) launchConfetti();
+}
+
+function cramQuit() {
+    if (_cramTimerInterval) { clearInterval(_cramTimerInterval); _cramTimerInterval = null; }
+    hideCalcFab();
+    hideAllViews();
+    document.getElementById('main-view').classList.remove('hidden');
+    showCramView();
+}
+
+function cramAgain() {
+    hideAllViews();
+    document.getElementById('main-view').classList.remove('hidden');
+    showCramView();
+}
+
+function cramBackToDashboard() {
+    hideAllViews();
+    document.getElementById('main-view').classList.remove('hidden');
+    showLearnView();
+}
+
+// ============================================================
+// LESSON SEARCH & NAVIGATION (practice view)
+// ============================================================
+function filterLessonSearch(query) {
+    const resultsEl = document.getElementById('lesson-search-results');
+    const clearBtn = document.getElementById('lesson-search-clear');
+    if (!resultsEl) return;
+
+    const q = query.trim().toLowerCase();
+    if (q.length < 2) {
+        resultsEl.classList.add('hidden');
+        resultsEl.innerHTML = '';
+        if (clearBtn) clearBtn.classList.toggle('hidden', q.length === 0);
+        return;
+    }
+    if (clearBtn) clearBtn.classList.remove('hidden');
+
+    const topicIcons = { algebra: '📐', geometry: '📏', trigonometry: '📊', calculus: '∫' };
+    const topicNames = { algebra: 'Algebra', geometry: 'Geometry', trigonometry: 'Trigonometry', calculus: 'Calculus' };
+    const results = [];
+
+    ['algebra', 'geometry', 'trigonometry', 'calculus'].forEach(topic => {
+        lessonPaths[topic].lessons.forEach(lesson => {
+            const titleMatch = lesson.title.toLowerCase().includes(q);
+            const subtitleMatch = lesson.subtitle.toLowerCase().includes(q);
+            const idMatch = lesson.id.toLowerCase().includes(q);
+            if (titleMatch || subtitleMatch || idMatch) {
+                // Check if this lesson has generators for practice
+                let genCount = 0;
+                lesson.sections.forEach(s => {
+                    if (s.type === 'generated_practice') genCount += s.generators.length;
+                });
+                results.push({ topic, lesson, genCount, titleMatch });
+            }
+        });
+    });
+
+    // Sort: title matches first, then alphabetically
+    results.sort((a, b) => {
+        if (a.titleMatch && !b.titleMatch) return -1;
+        if (!a.titleMatch && b.titleMatch) return 1;
+        return a.lesson.title.localeCompare(b.lesson.title);
+    });
+
+    if (results.length === 0) {
+        resultsEl.innerHTML = '<div class="ls-empty">No lessons found matching your search</div>';
+        resultsEl.classList.remove('hidden');
+        return;
+    }
+
+    resultsEl.innerHTML = results.slice(0, 12).map(r => {
+        const hasPractice = r.genCount > 0;
+        return `<button class="ls-result ${hasPractice ? '' : 'ls-no-practice'}" onclick="startLessonPractice('${r.topic}', '${r.lesson.id}')" ${hasPractice ? '' : 'disabled'}>
+            <span class="ls-icon">${topicIcons[r.topic]}</span>
+            <div class="ls-info">
+                <span class="ls-title">${escapeHtml(r.lesson.title)}</span>
+                <span class="ls-meta">${topicNames[r.topic]} · ${hasPractice ? r.genCount + ' practice problems' : 'No practice yet'}</span>
+            </div>
+            ${hasPractice ? '<span class="ls-go">Practice →</span>' : '<span class="ls-go ls-locked">🔒</span>'}
+        </button>`;
+    }).join('');
+
+    if (results.length > 12) {
+        resultsEl.innerHTML += `<div class="ls-more">${results.length - 12} more results — refine your search</div>`;
+    }
+
+    resultsEl.classList.remove('hidden');
+}
+
+function clearLessonSearch() {
+    const input = document.getElementById('lesson-search-input');
+    const results = document.getElementById('lesson-search-results');
+    const clearBtn = document.getElementById('lesson-search-clear');
+    if (input) input.value = '';
+    if (results) { results.innerHTML = ''; results.classList.add('hidden'); }
+    if (clearBtn) clearBtn.classList.add('hidden');
+    if (input) input.focus();
+}
+
+async function startLessonPractice(topic, lessonId) {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // Check if lesson is completed
+    const userRef = doc(db, 'users', user.uid);
+    const userSnap = await getDoc(userRef);
+    const completedLessons = userSnap.exists() ? (userSnap.data().completedLessons || []) : [];
+    const lessonKey = `${topic}-${lessonId}`;
+
+    if (!completedLessons.includes(lessonKey)) {
+        showToast('Complete this lesson first before practicing it!', 'error');
+        return;
+    }
+
+    // Gather generators for this lesson
+    const lesson = lessonPaths[topic].lessons.find(l => l.id === lessonId);
+    if (!lesson) return;
+
+    const genIds = [];
+    lesson.sections.forEach(s => {
+        if (s.type === 'generated_practice') {
+            s.generators.forEach(gId => { if (generators[gId]) genIds.push(gId); });
+        }
+    });
+
+    if (genIds.length === 0) {
+        showToast('No practice generators found for this lesson', 'error');
+        return;
+    }
+
+    // Generate 10 problems
+    const problems = [];
+    const seenQuestions = new Set();
+    const shuffledGens = shuffle([...genIds]);
+    for (let i = 0; i < 10; i++) {
+        const gId = shuffledGens[i % shuffledGens.length];
+        let prob = null;
+        for (let attempt = 0; attempt < 10; attempt++) {
+            const p = generators[gId]();
+            const qKey = p.question.replace(/<[^>]+>/g, '').trim();
+            if (!seenQuestions.has(qKey)) {
+                seenQuestions.add(qKey);
+                prob = p;
+                break;
+            }
+        }
+        if (prob) {
+            problems.push({
+                question: prob.question,
+                correctAnswer: prob.choices[prob.correctIndex],
+                wrongAnswers: prob.choices.filter((_, j) => j !== prob.correctIndex),
+                explanation: prob.explanation
+            });
+        }
+    }
+
+    if (problems.length === 0) {
+        showToast('Could not generate problems', 'error');
+        return;
+    }
+
+    clearLessonSearch();
+    practiceState.topic = topic;
+    practiceState.difficulty = 'medium';
+    launchSession(problems, lesson.title, '', 'regular', problems.length);
 }
 
 // Make functions globally available
@@ -881,6 +1772,25 @@ window.showWorkedExample = showWorkedExample;
 window.revealNextStep = revealNextStep;
 window.closeWorkedExample = closeWorkedExample;
 window.showToast = showToast;
+window.filterLessonSearch = filterLessonSearch;
+window.clearLessonSearch = clearLessonSearch;
+window.startLessonPractice = startLessonPractice;
+window.showCramView = showCramView;
+window.cramSelectTopic = cramSelectTopic;
+window.cramSearchLessons = cramSearchLessons;
+window.cramAddLesson = cramAddLesson;
+window.cramRemoveLesson = cramRemoveLesson;
+window.cramBack = cramBack;
+window.cramStartDiagnostic = cramStartDiagnostic;
+window.cramDiagAnswer = cramDiagAnswer;
+window.cramNextDiagnostic = cramNextDiagnostic;
+window.cramStartSession = cramStartSession;
+window.cramPracticeAnswer = cramPracticeAnswer;
+window.cramPracticeNext = cramPracticeNext;
+window.cramAdvanceBlock = cramAdvanceBlock;
+window.cramQuit = cramQuit;
+window.cramAgain = cramAgain;
+window.cramBackToDashboard = cramBackToDashboard;
 
 // Friendly Firebase error messages
 function getFriendlyError(errorCode) {
@@ -2448,24 +3358,45 @@ function showDashboard() {
 function showLearnView() {
     document.getElementById('learn-view').classList.remove('hidden');
     document.getElementById('practice-view').classList.add('hidden');
+    document.getElementById('cram-view').classList.add('hidden');
     document.getElementById('learn-toggle').classList.add('active');
     document.getElementById('learn-toggle').setAttribute('aria-selected', 'true');
     document.getElementById('practice-toggle').classList.remove('active');
     document.getElementById('practice-toggle').setAttribute('aria-selected', 'false');
+    document.getElementById('cram-toggle').classList.remove('active');
+    document.getElementById('cram-toggle').setAttribute('aria-selected', 'false');
 }
 
 // Show Practice View
 function showPracticeView() {
     document.getElementById('learn-view').classList.add('hidden');
     document.getElementById('practice-view').classList.remove('hidden');
+    document.getElementById('cram-view').classList.add('hidden');
     document.getElementById('learn-toggle').classList.remove('active');
     document.getElementById('learn-toggle').setAttribute('aria-selected', 'false');
     document.getElementById('practice-toggle').classList.add('active');
     document.getElementById('practice-toggle').setAttribute('aria-selected', 'true');
+    document.getElementById('cram-toggle').classList.remove('active');
+    document.getElementById('cram-toggle').setAttribute('aria-selected', 'false');
     updateQuickPracticeBtn();
     updateRetryMissedBtn();
     updateMasteryRings();
     updateDailyGoal();
+}
+
+// Show Cram View
+function showCramView() {
+    document.getElementById('learn-view').classList.add('hidden');
+    document.getElementById('practice-view').classList.add('hidden');
+    document.getElementById('cram-view').classList.remove('hidden');
+    document.getElementById('learn-toggle').classList.remove('active');
+    document.getElementById('learn-toggle').setAttribute('aria-selected', 'false');
+    document.getElementById('practice-toggle').classList.remove('active');
+    document.getElementById('practice-toggle').setAttribute('aria-selected', 'false');
+    document.getElementById('cram-toggle').classList.add('active');
+    document.getElementById('cram-toggle').setAttribute('aria-selected', 'true');
+    // Reset to step 1
+    cramReset();
 }
 
 // ============================================================
@@ -3077,6 +4008,10 @@ function launchSession(problems, topicLabel, diffLabel, mode, total, challengeCo
     document.getElementById('practice-session').classList.remove('hidden');
     showProblem(0);
 
+    // Reset keyboard shortcut hint for new session
+    const kbHint = document.getElementById('kb-shortcut-hint');
+    if (kbHint) { kbHint.classList.add('hidden'); kbHint.classList.remove('kb-fade'); delete kbHint.dataset.shown; }
+
     // Show calculator for advanced topics during practice
     const practiceTopic = sessionState.topic || practiceState.topic || '';
     if (shouldShowCalculator(practiceTopic, null)) {
@@ -3118,7 +4053,7 @@ function showProblem(index) {
     const labels = ['A', 'B', 'C', 'D'];
     document.getElementById('problem-choices').innerHTML = shuffled.map((ch, i) => `
         <button class="choice-btn" data-correct="${ch.correct}" data-index="${i}" onclick="selectChoice(this)">
-            <span class="choice-label">${labels[i]}</span>${ch.text}
+            <span class="choice-label">${labels[i]}</span>${ch.text}<span class="choice-kb-hint">${labels[i]}</span>
         </button>
     `).join('');
 
@@ -3133,6 +4068,14 @@ function showProblem(index) {
 function selectChoice(btn) {
     if (sessionState.answered) return;
     sessionState.answered = true;
+
+    // Show keyboard hint bar after first answer
+    const kbHint = document.getElementById('kb-shortcut-hint');
+    if (kbHint && !kbHint.dataset.shown) {
+        kbHint.classList.remove('hidden');
+        kbHint.dataset.shown = '1';
+        setTimeout(() => kbHint.classList.add('kb-fade'), 6000);
+    }
 
     if (sessionState.timerInterval) {
         clearInterval(sessionState.timerInterval);
@@ -3912,7 +4855,7 @@ function backToDashboardFromSummary() {
 }
 
 function hideAllViews() {
-    const views = ['main-view', 'path-view', 'lesson-viewer', 'profile-view', 'leaderboard-view', 'practice-session', 'session-summary'];
+    const views = ['main-view', 'path-view', 'lesson-viewer', 'profile-view', 'leaderboard-view', 'practice-session', 'session-summary', 'cram-session'];
     views.forEach(id => document.getElementById(id).classList.add('hidden'));
     hideCalcFab();
 }
