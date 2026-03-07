@@ -1430,7 +1430,7 @@ export const lessonPaths = {
             ]},
 
             // ---- 27. Calculus Review ----
-            { id: 'calculus-review', title: 'Calculus Review', subtitle: 'Comprehensive problem solving', xpReward: 100, sections: [
+            { id: 'calculus-review', title: 'Calculus Review', subtitle: 'dang bro calc is hard i could never', xpReward: 1000, sections: [
                 { type: 'text', content: `<h3>Comprehensive Review</h3><p>This final lesson covers the major concepts: limits, derivatives (power, product, quotient, chain rules), applications (optimization, related rates), integrals (FTC, u-sub, by parts), and series.</p>` },
                 { type: 'generated_practice', generators: ['calc-power-rule'] },
                 { type: 'generated_practice', generators: ['calc-chain-rule'] },
