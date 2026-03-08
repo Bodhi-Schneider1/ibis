@@ -492,6 +492,13 @@ export const lessonPaths = {
                 { type: 'example', title: 'Finding the Hypotenuse', content: `<p>Legs are 3 and 4. c² = 3² + 4² = 9 + 16 = 25 → c = <strong>5</strong>.</p>` },
                 { type: 'steps', title: 'Using the Pythagorean Theorem', steps: ['Identify the right angle and label sides a, b (legs) and c (hypotenuse).', 'Plug known values into a² + b² = c².', 'Solve for the unknown side.', 'Take the square root if needed.'] },
                 { type: 'generated_practice', generators: ['find-hypotenuse', 'find-leg'] },
+                { type: 'interactive_steps', title: 'Guided: Hypotenuse 13, one leg 5. Find the other leg.', description: 'Rearrange a² + b² = c² to solve for a missing leg.', steps: [
+                    { text: 'Write the equation: 5² + b² = {blank}²', answer: '13', hint: 'The hypotenuse is 13' },
+                    { text: '5² = {blank}', answer: '25', hint: '5 × 5' },
+                    { text: '13² = {blank}', answer: '169', hint: '13 × 13' },
+                    { text: 'b² = 169 − 25 = {blank}', answer: '144', hint: 'Subtract' },
+                    { text: 'b = √144 = {blank}', answer: '12', hint: 'What number squared is 144?' }
+                ], result: 'The other leg is 12. (5, 12, 13) is a Pythagorean triple!' },
                 { type: 'tips', content: `<h4>💡 Key Takeaways</h4><p>Common Pythagorean triples: (3,4,5), (5,12,13), (8,15,17), (7,24,25). Multiples also work: (6,8,10) is 2×(3,4,5).</p>` },
                 { type: 'practice', problems: [
                     { question: 'Find the hypotenuse: legs 6 and 8.', choices: ['10', '14', '48', '100'], correctIndex: 0, explanation: '6² + 8² = 36 + 64 = 100 → √100 = <strong>10</strong>.' },
@@ -506,6 +513,12 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Perimeter & Area</h3><p><strong>Perimeter</strong> is the total distance around a shape. <strong>Area</strong> is the space inside.</p><p>Rectangle: P = 2l + 2w, A = lw. Triangle: A = ½bh. Parallelogram: A = bh.</p>` },
                 { type: 'example', title: 'Rectangle Area', content: `<p>Rectangle with l = 8 and w = 5: P = 2(8) + 2(5) = <strong>26</strong>. A = 8 × 5 = <strong>40</strong>.</p>` },
                 { type: 'generated_practice', generators: ['rectangle-area', 'perimeter-rectangle', 'triangle-area'] },
+                { type: 'interactive_steps', title: 'Guided: Find the area of a triangle with base 14 and height 9', description: 'Apply the triangle area formula step by step.', steps: [
+                    { text: 'The formula for triangle area is A = ½ × base × {blank}', answer: 'height', hint: 'Area = ½ × b × h' },
+                    { text: 'Plug in: A = ½ × 14 × {blank}', answer: '9', hint: 'The height is 9' },
+                    { text: '14 × 9 = {blank}', answer: '126', hint: 'Multiply base times height' },
+                    { text: '½ × 126 = {blank}', answer: '63', hint: 'Divide by 2' }
+                ], result: 'Area = 63 square units' },
                 { type: 'tips', content: `<h4>💡 Key Takeaways</h4><p>Perimeter = sum of all sides. Area = space inside. For triangles, the height must be <em>perpendicular</em> to the base.</p>` },
                 { type: 'practice', problems: [
                     { question: 'Area of a rectangle with length 12 and width 7:', choices: ['38', '84', '19', '42'], correctIndex: 1, explanation: '12 × 7 = <strong>84</strong>.' },
@@ -520,6 +533,12 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Circle Formulas</h3><p><strong>Circumference</strong> (distance around): C = 2πr = πd. <strong>Area</strong>: A = πr².</p><p>The <strong>radius</strong> (r) goes from center to edge. The <strong>diameter</strong> (d) goes all the way across: d = 2r.</p>` },
                 { type: 'example', title: 'Finding Circumference & Area', content: `<p>Circle with r = 7: C = 2π(7) = 14π ≈ <strong>43.98</strong>. A = π(7²) = 49π ≈ <strong>153.94</strong>.</p>` },
                 { type: 'generated_practice', generators: ['circle-circumference', 'circle-area'] },
+                { type: 'interactive_steps', title: 'Guided: Circle with radius 6. Find area and circumference.', description: 'Apply the circle formulas.', steps: [
+                    { text: 'Circumference = 2πr = 2π × {blank}', answer: '6', hint: 'The radius is 6' },
+                    { text: 'C = {blank}π', answer: '12', hint: '2 × 6 = ?' },
+                    { text: 'Area = πr² = π × 6² = π × {blank}', answer: '36', hint: '6 × 6' },
+                    { text: 'Area = {blank}π', answer: '36', hint: 'π × 36' }
+                ], result: 'C = 12π ≈ 37.7, A = 36π ≈ 113.1' },
                 { type: 'tips', content: `<h4>💡 Key Takeaways</h4><p>Always check: is the problem giving you radius or diameter? If diameter, divide by 2 first. Leave answers in terms of π when the problem says "exact."</p>` },
                 { type: 'practice', problems: [
                     { question: 'Circumference of a circle with diameter 10:', choices: ['10π', '25π', '100π', '5π'], correctIndex: 0, explanation: 'C = πd = <strong>10π</strong>.' },
@@ -547,6 +566,12 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Interior Angle Sum</h3><p>For any convex polygon with <strong>n</strong> sides: Interior angle sum = <strong>(n − 2) × 180°</strong>.</p><p>For a <strong>regular</strong> polygon (all sides and angles equal), each interior angle = (n − 2) × 180° / n.</p><h3>Exterior Angles</h3><p>The exterior angles of any convex polygon always sum to <strong>360°</strong>. For a regular polygon, each exterior angle = 360° / n.</p>` },
                 { type: 'example', title: 'Hexagon Angles', content: `<p>Hexagon (n = 6): Sum = (6−2) × 180° = 720°. Each interior angle of a regular hexagon = 720° / 6 = <strong>120°</strong>. Each exterior angle = 360° / 6 = <strong>60°</strong>.</p>` },
                 { type: 'generated_practice', generators: ['interior-angle-sum', 'exterior-angle-regular', 'one-interior-angle'] },
+                { type: 'interactive_steps', title: 'Guided: Find each interior angle of a regular nonagon (9 sides)', description: 'Use the interior angle sum formula, then divide.', steps: [
+                    { text: 'Interior angle sum = (n − 2) × 180°. n = {blank}', answer: '9', hint: 'A nonagon has 9 sides' },
+                    { text: '(9 − 2) = {blank}', answer: '7', hint: 'Subtract' },
+                    { text: '7 × 180° = {blank}°', answer: '1260', hint: 'Multiply' },
+                    { text: 'Each angle of a regular nonagon = 1260° ÷ 9 = {blank}°', answer: '140', hint: 'Divide the sum by the number of angles' }
+                ], result: 'Each interior angle of a regular nonagon is 140°' },
                 { type: 'practice', problems: [
                     { question: 'Interior angle sum of a pentagon (5 sides):', choices: ['360°', '540°', '720°', '900°'], correctIndex: 1, explanation: '(5−2) × 180° = <strong>540°</strong>.' },
                     { question: 'Each interior angle of a regular octagon:', choices: ['120°', '135°', '144°', '150°'], correctIndex: 1, explanation: '(8−2) × 180° / 8 = 1080° / 8 = <strong>135°</strong>.' },
@@ -597,6 +622,12 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Similar Figures</h3><p>Two figures are <strong>similar</strong> (~) if they have the same shape but possibly different sizes. Corresponding angles are equal and corresponding sides are <em>proportional</em>.</p><p>The <strong>scale factor</strong> is the ratio of corresponding sides. If the scale factor is k, then areas scale by k² and volumes by k³.</p><h3>Triangle Similarity Criteria</h3><p><strong>AA</strong>: two pairs of equal angles. <strong>SSS~</strong>: all three pairs of sides proportional. <strong>SAS~</strong>: two pairs of sides proportional with the included angle equal.</p>` },
                 { type: 'example', title: 'Finding a Missing Side', content: `<p>Triangles are similar with scale factor 3:5. If a side of the smaller is 6, the corresponding side of the larger = 6 × (5/3) = <strong>10</strong>.</p>` },
                 { type: 'generated_practice', generators: ['scale-factor', 'similar-triangle-side'] },
+                { type: 'interactive_steps', title: 'Guided: Similar triangles, scale factor 3:5. Small side = 9. Find large side.', description: 'Use the scale factor to find the corresponding side.', steps: [
+                    { text: 'Scale factor = small : large = 3 : {blank}', answer: '5', hint: 'Given in the problem' },
+                    { text: 'Set up proportion: 3/5 = 9/{blank}', answer: 'x', hint: 'x is the unknown large side' },
+                    { text: 'Cross multiply: 3x = 5 × {blank}', answer: '9', hint: 'Multiply 5 by the known small side' },
+                    { text: '3x = 45. x = 45 ÷ 3 = {blank}', answer: '15', hint: 'Divide both sides by 3' }
+                ], result: 'The corresponding large side is 15' },
                 { type: 'practice', problems: [
                     { question: 'Similar triangles have:', choices: ['Equal sides', 'Proportional sides', 'No equal angles', 'Equal perimeters'], correctIndex: 1, explanation: 'Similar triangles have <strong>proportional</strong> corresponding sides.' },
                     { question: 'Scale factor is 2:3. Small triangle side = 8. Corresponding large side =', choices: ['12', '16', '5.3', '10'], correctIndex: 0, explanation: '8 × (3/2) = <strong>12</strong>.' },
@@ -610,6 +641,14 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Distance Formula</h3><p>The distance between (x₁, y₁) and (x₂, y₂):</p><p style="text-align:center;"><strong>d = √[(x₂−x₁)² + (y₂−y₁)²]</strong></p><h3>Midpoint Formula</h3><p>The midpoint of a segment from (x₁, y₁) to (x₂, y₂):</p><p style="text-align:center;"><strong>M = ((x₁+x₂)/2, (y₁+y₂)/2)</strong></p>` },
                 { type: 'example', title: 'Distance & Midpoint', content: `<p>Points (1, 2) and (4, 6): d = √[(4−1)² + (6−2)²] = √[9+16] = √25 = <strong>5</strong>. Midpoint = ((1+4)/2, (2+6)/2) = <strong>(2.5, 4)</strong>.</p>` },
                 { type: 'generated_practice', generators: ['distance-formula', 'midpoint-formula'] },
+                { type: 'interactive_steps', title: 'Guided: Distance and midpoint of A(1, 3) and B(7, 11)', description: 'Apply both formulas.', steps: [
+                    { text: 'Δx = 7 − 1 = {blank}', answer: '6', hint: 'x₂ − x₁' },
+                    { text: 'Δy = 11 − 3 = {blank}', answer: '8', hint: 'y₂ − y₁' },
+                    { text: 'd = √(6² + 8²) = √(36 + 64) = √{blank}', answer: '100', hint: 'Add the squares' },
+                    { text: 'd = {blank}', answer: '10', hint: '√100' },
+                    { text: 'Midpoint x: (1 + 7)/2 = {blank}', answer: '4', hint: '8 ÷ 2' },
+                    { text: 'Midpoint y: (3 + 11)/2 = {blank}', answer: '7', hint: '14 ÷ 2' }
+                ], result: 'Distance = 10, Midpoint = (4, 7)' },
                 { type: 'practice', problems: [
                     { question: 'Distance between (0, 0) and (3, 4):', choices: ['5', '7', '12', '25'], correctIndex: 0, explanation: '√(9+16) = √25 = <strong>5</strong>.' },
                     { question: 'Midpoint of (2, 8) and (6, 4):', choices: ['(4, 6)', '(8, 12)', '(3, 2)', '(4, 12)'], correctIndex: 0, explanation: '((2+6)/2, (8+4)/2) = <strong>(4, 6)</strong>.' },
@@ -660,6 +699,12 @@ export const lessonPaths = {
             { id: 'volume', title: 'Volume', subtitle: 'Prisms, cylinders, cones, and spheres', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Volume Formulas</h3><p><strong>Prism/Cylinder</strong>: V = Bh (base area × height). <strong>Cone/Pyramid</strong>: V = ⅓Bh. <strong>Sphere</strong>: V = (4/3)πr³.</p><p>Cube: V = s³. Rectangular prism: V = lwh. Cylinder: V = πr²h.</p>` },
                 { type: 'generated_practice', generators: ['cube-volume', 'cylinder-volume', 'sphere-volume'] },
+                { type: 'interactive_steps', title: 'Guided: Find the volume of a cylinder with r = 4 and h = 10', description: 'Apply V = πr²h step by step.', steps: [
+                    { text: 'V = πr²h. r² = 4² = {blank}', answer: '16', hint: '4 × 4' },
+                    { text: 'r² × h = 16 × {blank}', answer: '10', hint: 'Height = 10' },
+                    { text: '16 × 10 = {blank}', answer: '160', hint: 'Multiply' },
+                    { text: 'V = {blank}π', answer: '160', hint: 'V = 160π' }
+                ], result: 'V = 160π ≈ 502.7 cubic units' },
                 { type: 'practice', problems: [
                     { question: 'Volume of a cube with side 5:', choices: ['25', '125', '150', '75'], correctIndex: 1, explanation: '5³ = <strong>125</strong>.' },
                     { question: 'Volume of a cylinder with r=4, h=10:', choices: ['160π', '40π', '80π', '320π'], correctIndex: 0, explanation: 'π(16)(10) = <strong>160π</strong>.' },
@@ -672,6 +717,13 @@ export const lessonPaths = {
             { id: 'arcs-sectors', title: 'Arcs & Sectors', subtitle: 'Parts of circles', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Arc Length</h3><p>Arc length = (θ/360°) × 2πr, where θ is the central angle in degrees.</p><h3>Sector Area</h3><p>Sector area = (θ/360°) × πr².</p><p>Think of a sector as a "pizza slice" — the fraction of the circle is θ/360.</p>` },
                 { type: 'generated_practice', generators: ['arc-length-calc', 'sector-area-calc'] },
+                { type: 'interactive_steps', title: 'Guided: Arc length and sector area for r = 12, θ = 150°', description: 'Find both using the fraction-of-circle approach.', steps: [
+                    { text: 'The fraction of the circle: 150 / 360 = {blank}/12', answer: '5', hint: 'Simplify: 150/360 = 5/12' },
+                    { text: 'Arc length = (5/12) × 2π(12) = (5/12) × {blank}π', answer: '24', hint: '2 × 12 = 24' },
+                    { text: 'Arc = (5/12) × 24π = {blank}π', answer: '10', hint: '5 × 24 ÷ 12' },
+                    { text: 'Sector area = (5/12) × π(12²) = (5/12) × {blank}π', answer: '144', hint: '12² = 144' },
+                    { text: 'Area = (5/12) × 144π = {blank}π', answer: '60', hint: '5 × 144 ÷ 12' }
+                ], result: 'Arc length = 10π ≈ 31.4, Sector area = 60π ≈ 188.5' },
                 { type: 'practice', problems: [
                     { question: 'Arc length for r = 10, θ = 90°:', choices: ['5π', '25π', '10π', '20π'], correctIndex: 0, explanation: '(90/360) × 2π(10) = ¼ × 20π = <strong>5π</strong>.' },
                     { question: 'Sector area for r = 6, θ = 60°:', choices: ['6π', '36π', '12π', '2π'], correctIndex: 0, explanation: '(60/360) × π(36) = ⅙ × 36π = <strong>6π</strong>.' },
@@ -698,6 +750,11 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>45-45-90 Triangle</h3><p>Legs are equal. If each leg = a, the hypotenuse = a√2. Ratio: <strong>1 : 1 : √2</strong>.</p><h3>30-60-90 Triangle</h3><p>Short leg (opposite 30°) = a. Long leg (opposite 60°) = a√3. Hypotenuse = 2a. Ratio: <strong>1 : √3 : 2</strong>.</p>` },
                 { type: 'example', title: '45-45-90 Example', content: `<p>Leg = 7. Hypotenuse = 7√2 ≈ <strong>9.90</strong>.</p><p>30-60-90: short leg = 5. Long leg = 5√3 ≈ 8.66. Hypotenuse = 10.</p>` },
                 { type: 'generated_practice', generators: ['is-right-triangle'] },
+                { type: 'interactive_steps', title: 'Guided: 30-60-90 with hypotenuse = 14. Find both legs.', description: 'Use the ratio 1 : √3 : 2.', steps: [
+                    { text: 'Hypotenuse = 2a, so 2a = 14. a = {blank}', answer: '7', hint: 'Divide 14 by 2' },
+                    { text: 'Short leg (opposite 30°) = a = {blank}', answer: '7', hint: 'a is the short leg' },
+                    { text: 'Long leg (opposite 60°) = a√3 = {blank}√3', answer: '7', hint: 'Multiply a by √3' }
+                ], result: 'Short leg = 7, Long leg = 7√3 ≈ 12.1' },
                 { type: 'practice', problems: [
                     { question: '45-45-90 triangle with leg = 6. Hypotenuse =', choices: ['6', '6√2', '6√3', '12'], correctIndex: 1, explanation: 'Hypotenuse = leg × √2 = <strong>6√2</strong>.' },
                     { question: '30-60-90 triangle with short leg = 4. Hypotenuse =', choices: ['4√2', '4√3', '8', '2'], correctIndex: 2, explanation: 'Hypotenuse = 2 × short leg = <strong>8</strong>.' },
@@ -799,6 +856,12 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>Solving for a Side</h3><p>When you know one side and one acute angle, use the appropriate trig ratio to find an unknown side.</p><p>Steps: 1) Label the sides relative to the known angle. 2) Pick the ratio that uses the known side and the unknown side. 3) Set up the equation and solve.</p>` },
                 { type: 'example', title: 'Finding an Opposite Side', content: `<p>Angle = 35°, hypotenuse = 10. Find the opposite side.</p><p>sin 35° = x/10 → x = 10 sin 35° ≈ 10(0.574) ≈ <strong>5.74</strong>.</p>` },
                 { type: 'generated_practice', generators: ['trig-find-side'] },
+                { type: 'interactive_steps', title: 'Guided: Find the opposite side. Angle = 40°, adjacent = 12.', description: 'Choose the right ratio and solve.', steps: [
+                    { text: 'We know adjacent and want opposite. Use {blank}', answer: 'tan', hint: 'TOA: tan = opposite/adjacent' },
+                    { text: 'tan(40°) = opposite / {blank}', answer: '12', hint: 'The adjacent side is 12' },
+                    { text: 'opposite = 12 × tan(40°) = 12 × {blank}', answer: '0.839', hint: 'tan(40°) ≈ 0.839' },
+                    { text: 'opposite ≈ {blank}', answer: '10.1', hint: '12 × 0.839 ≈ ?' }
+                ], result: 'The opposite side ≈ 10.1' },
                 { type: 'practice', problems: [
                     { question: 'Angle 40°, adjacent = 12. Find opposite (use tan).', choices: ['12 tan 40°', '12 sin 40°', '12 cos 40°', '12/tan 40°'], correctIndex: 0, explanation: 'tan 40° = opp/12, so opp = <strong>12 tan 40°</strong>.' },
                     { question: 'Angle 50°, hypotenuse = 20. Find adjacent (use cos).', choices: ['20 sin 50°', '20 tan 50°', '20 cos 50°', '20/cos 50°'], correctIndex: 2, explanation: 'cos 50° = adj/20, so adj = <strong>20 cos 50°</strong>.' },
@@ -824,6 +887,12 @@ export const lessonPaths = {
             { id: 'degrees-radians', title: 'Degrees & Radians', subtitle: 'Converting between angle units', xpReward: 40, sections: [
                 { type: 'text', content: `<h3>Radians</h3><p>A <strong>radian</strong> is the angle where the arc length equals the radius. One full revolution = 2π radians = 360°.</p><p>To convert: <strong>degrees → radians</strong>: multiply by π/180. <strong>Radians → degrees</strong>: multiply by 180/π.</p><p>Key values: 90° = π/2, 180° = π, 270° = 3π/2, 360° = 2π.</p>` },
                 { type: 'generated_practice', generators: ['deg-to-rad', 'rad-to-deg'] },
+                { type: 'interactive_steps', title: 'Guided: Convert 240° to radians', description: 'Multiply by the conversion factor π/180.', steps: [
+                    { text: 'Formula: radians = degrees × π/{blank}', answer: '180', hint: 'π radians = 180°' },
+                    { text: '240 × π/180 = {blank}π/180', answer: '240', hint: 'Write the numerator' },
+                    { text: 'Simplify 240/180: divide both by 60 → {blank}/3', answer: '4', hint: '240 ÷ 60 = ?, 180 ÷ 60 = 3' },
+                    { text: '240° = {blank}π/3 radians', answer: '4', hint: '4π/3' }
+                ], result: '240° = 4π/3 radians' },
                 { type: 'practice', problems: [
                     { question: 'Convert 60° to radians:', choices: ['π/6', 'π/4', 'π/3', 'π/2'], correctIndex: 2, explanation: '60 × π/180 = <strong>π/3</strong>.' },
                     { question: 'Convert π/4 to degrees:', choices: ['30°', '45°', '60°', '90°'], correctIndex: 1, explanation: '(π/4) × 180/π = <strong>45°</strong>.' },
@@ -849,6 +918,12 @@ export const lessonPaths = {
             { id: 'reference-angles', title: 'Reference Angles', subtitle: 'Finding trig values in any quadrant', xpReward: 45, sections: [
                 { type: 'text', content: `<h3>Reference Angles</h3><p>A <strong>reference angle</strong> is the acute angle between the terminal side and the x-axis. It's always between 0° and 90°.</p><p>Q1: ref = θ. Q2: ref = 180° − θ. Q3: ref = θ − 180°. Q4: ref = 360° − θ.</p><p>The trig values use the reference angle's value, with the sign determined by the quadrant (ASTC: All, Sin, Tan, Cos).</p>` },
                 { type: 'generated_practice', generators: ['find-reference-angle', 'trig-with-reference'] },
+                { type: 'interactive_steps', title: 'Guided: Find sin(210°) using reference angles', description: 'Find the reference angle, then apply the quadrant sign.', steps: [
+                    { text: '210° is in Quadrant {blank}', answer: '3', hint: '180° < 210° < 270°' },
+                    { text: 'Reference angle = 210° − 180° = {blank}°', answer: '30', hint: 'For Q3: ref = θ − 180°' },
+                    { text: 'sin(30°) = {blank}', answer: '0.5', hint: 'Special angle value' },
+                    { text: 'In Q3, sin is negative. So sin(210°) = {blank}', answer: '-0.5', hint: 'Apply the negative sign' }
+                ], result: 'sin(210°) = −0.5. ASTC: sin is negative in Q3!' },
                 { type: 'practice', problems: [
                     { question: 'Reference angle for 150°:', choices: ['30°', '50°', '60°', '150°'], correctIndex: 0, explanation: '180° − 150° = <strong>30°</strong>.' },
                     { question: 'Reference angle for 225°:', choices: ['45°', '55°', '135°', '225°'], correctIndex: 0, explanation: '225° − 180° = <strong>45°</strong>.' },
@@ -940,6 +1015,15 @@ export const lessonPaths = {
             { id: 'law-of-cosines', title: 'Law of Cosines', subtitle: 'The generalized Pythagorean theorem', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Law of Cosines</h3><p>For any triangle:</p><p style="text-align:center;"><strong>c² = a² + b² − 2ab cos C</strong></p><p>Use when you know: (1) two sides and the included angle (SAS), or (2) all three sides (SSS) to find an angle.</p><p>When C = 90°, cos 90° = 0 and this reduces to the Pythagorean theorem!</p>` },
                 { type: 'generated_practice', generators: ['law-of-cosines-calc', 'law-choice'] },
+                { type: 'interactive_steps', title: 'Guided: a = 8, b = 5, C = 60°. Find c.', description: 'Apply c² = a² + b² − 2ab cos C.', steps: [
+                    { text: 'a² = 8² = {blank}', answer: '64', hint: '8 × 8' },
+                    { text: 'b² = 5² = {blank}', answer: '25', hint: '5 × 5' },
+                    { text: '2ab = 2 × 8 × 5 = {blank}', answer: '80', hint: 'Multiply' },
+                    { text: 'cos 60° = {blank}', answer: '0.5', hint: 'Special angle value' },
+                    { text: 'c² = 64 + 25 − 80(0.5) = 89 − {blank}', answer: '40', hint: '80 × 0.5' },
+                    { text: 'c² = {blank}', answer: '49', hint: '89 − 40' },
+                    { text: 'c = √49 = {blank}', answer: '7', hint: 'Perfect square!' }
+                ], result: 'c = 7' },
                 { type: 'practice', problems: [
                     { question: 'When is Law of Cosines most useful?', choices: ['AAS', 'ASA', 'SAS or SSS', 'AAA'], correctIndex: 2, explanation: 'Law of Cosines is ideal for <strong>SAS or SSS</strong>.' },
                     { question: 'a=5, b=7, C=60°. Find c².', choices: ['74 − 70cos60°', '74 + 70cos60°', '74 − 35', '12 − 70cos60°'], correctIndex: 0, explanation: 'c² = 25 + 49 − 2(5)(7)cos60° = <strong>74 − 70cos60°</strong>.' },
@@ -1061,6 +1145,12 @@ export const lessonPaths = {
             { id: 'vectors', title: 'Vectors', subtitle: 'Magnitude, direction, and operations', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Vectors</h3><p>A <strong>vector</strong> has both magnitude (length) and direction. Written as ⟨a, b⟩ or with an arrow.</p><p><strong>Magnitude</strong>: |v| = √(a² + b²). <strong>Addition</strong>: ⟨a,b⟩ + ⟨c,d⟩ = ⟨a+c, b+d⟩. <strong>Scalar multiplication</strong>: k⟨a,b⟩ = ⟨ka, kb⟩.</p>` },
                 { type: 'generated_practice', generators: ['vector-magnitude', 'vector-add'] },
+                { type: 'interactive_steps', title: 'Guided: Find magnitude and direction of v = ⟨3, 4⟩', description: 'Use the magnitude formula and inverse tangent.', steps: [
+                    { text: '|v| = √(3² + 4²) = √(9 + {blank})', answer: '16', hint: '4² = 16' },
+                    { text: '|v| = √{blank}', answer: '25', hint: '9 + 16' },
+                    { text: '|v| = {blank}', answer: '5', hint: '√25' },
+                    { text: 'Direction: θ = tan⁻¹(4/3) ≈ {blank}°', answer: '53.1', hint: 'tan⁻¹(1.333...) ≈ ?' }
+                ], result: '|v| = 5, θ ≈ 53.1° above the positive x-axis' },
                 { type: 'practice', problems: [
                     { question: 'Magnitude of ⟨3, 4⟩:', choices: ['5', '7', '12', '1'], correctIndex: 0, explanation: '√(9+16) = √25 = <strong>5</strong>.' },
                     { question: '⟨2, 5⟩ + ⟨3, −1⟩ =', choices: ['⟨5, 4⟩', '⟨5, 6⟩', '⟨−1, 6⟩', '⟨6, 4⟩'], correctIndex: 0, explanation: '⟨2+3, 5+(−1)⟩ = <strong>⟨5, 4⟩</strong>.' },
@@ -1197,6 +1287,13 @@ export const lessonPaths = {
                 { type: 'text', content: `<h3>The Power Rule</h3><p>If f(x) = xⁿ, then <strong>f′(x) = nxⁿ⁻¹</strong>.</p><p>Combined with the constant multiple rule (d/dx[cf] = c·f′) and the sum rule (d/dx[f+g] = f′+g′), you can differentiate any polynomial.</p>` },
                 { type: 'example', title: 'Applying the Power Rule', content: `<p>f(x) = 3x⁴ − 2x² + 7x − 5. f′(x) = 12x³ − 4x + 7.</p>` },
                 { type: 'generated_practice', generators: ['calc-power-rule', 'calc-diff-rules'] },
+                { type: 'interactive_steps', title: 'Guided: Differentiate f(x) = 5x⁴ − 3x² + 7x − 2', description: 'Apply the power rule term by term.', steps: [
+                    { text: 'd/dx [5x⁴] = 5 · 4 · x³ = {blank}x³', answer: '20', hint: '5 × 4' },
+                    { text: 'd/dx [−3x²] = −3 · 2 · x = {blank}x', answer: '-6', hint: '−3 × 2' },
+                    { text: 'd/dx [7x] = {blank}', answer: '7', hint: 'x¹ → 1·x⁰ = 1, times coefficient 7' },
+                    { text: 'd/dx [−2] = {blank}', answer: '0', hint: 'Derivative of a constant' },
+                    { text: 'f′(x) = 20x³ − 6x + {blank}', answer: '7', hint: 'Combine all terms' }
+                ], result: 'f′(x) = 20x³ − 6x + 7' },
                 { type: 'practice', problems: [
                     { question: 'd/dx [x⁵] =', choices: ['5x⁴', '5x⁵', 'x⁴', '4x⁵'], correctIndex: 0, explanation: '5x⁵⁻¹ = <strong>5x⁴</strong>.' },
                     { question: 'd/dx [4x³] =', choices: ['12x²', '4x²', '12x³', '3x²'], correctIndex: 0, explanation: '4·3x² = <strong>12x²</strong>.' },
@@ -1230,6 +1327,13 @@ export const lessonPaths = {
             { id: 'quotient-rule', title: 'The Quotient Rule', subtitle: 'Differentiating fractions', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Quotient Rule</h3><p>If h(x) = f(x)/g(x), then:</p><p style="text-align:center;"><strong>h′(x) = [f′(x)g(x) − f(x)g′(x)] / [g(x)]²</strong></p><p>Memory: "lo d-hi minus hi d-lo, all over lo squared."</p>` },
                 { type: 'generated_practice', generators: ['calc-quotient-rule'] },
+                { type: 'interactive_steps', title: 'Guided: Differentiate h(x) = x² / (x + 1)', description: 'Apply the quotient rule: (f′g − fg′) / g².', steps: [
+                    { text: 'Let f = x², g = x + 1. f′ = {blank}', answer: '2x', hint: 'Power rule on x²' },
+                    { text: 'g′ = {blank}', answer: '1', hint: 'd/dx of (x + 1)' },
+                    { text: 'Numerator: f′g − fg′ = 2x(x+1) − x²({blank})', answer: '1', hint: 'Plug in g′' },
+                    { text: '= 2x² + 2x − x² = {blank} + 2x', answer: 'x²', hint: 'Combine 2x² − x²' },
+                    { text: 'Denominator: g² = {blank}', answer: '(x+1)²', hint: 'Square the denominator' }
+                ], result: 'h′(x) = (x² + 2x) / (x + 1)²' },
                 { type: 'practice', problems: [
                     { question: 'd/dx [x/(x+1)] at the numerator calculation:', choices: ['1·(x+1) − x·1', '1·(x+1) + x·1', 'x·1 − 1·(x+1)', '(x+1)/x²'], correctIndex: 0, explanation: 'Numerator: f′g − fg′ = <strong>1·(x+1) − x·1</strong> = 1.' },
                     { question: 'The quotient rule denominator is always:', choices: ['f(x)²', 'g(x)²', 'f(x)g(x)', '[f(x)+g(x)]²'], correctIndex: 1, explanation: 'Denominator is <strong>[g(x)]²</strong>.' },
@@ -1331,6 +1435,14 @@ export const lessonPaths = {
             { id: 'optimization', title: 'Optimization', subtitle: 'Finding maximum and minimum values', xpReward: 55, sections: [
                 { type: 'text', content: `<h3>Optimization Problems</h3><p>Steps: (1) Define variables and write the quantity to optimize. (2) Write a constraint equation. (3) Reduce to one variable. (4) Take the derivative, set = 0. (5) Verify it's a max or min. (6) Answer the question.</p>` },
                 { type: 'generated_practice', generators: ['optimization-setup'] },
+                { type: 'interactive_steps', title: 'Guided: A farmer has 100m of fencing for a rectangular pen against a barn (3 sides). Maximize area.', description: 'Set up the equation and find the maximum.', steps: [
+                    { text: 'Let x = width (two sides), y = length (one side). Perimeter: 2x + y = {blank}', answer: '100', hint: 'Total fencing is 100m' },
+                    { text: 'Solve for y: y = 100 − {blank}', answer: '2x', hint: 'Rearrange the perimeter equation' },
+                    { text: 'Area = x · y = x(100 − 2x) = 100x − {blank}x²', answer: '2', hint: 'Distribute x' },
+                    { text: 'A′(x) = 100 − 4x. Set to 0: x = {blank}', answer: '25', hint: '100 ÷ 4' },
+                    { text: 'y = 100 − 2(25) = {blank}', answer: '50', hint: '100 − 50' },
+                    { text: 'Max area = 25 × 50 = {blank} m²', answer: '1250', hint: 'Multiply' }
+                ], result: 'Maximum area = 1250 m² with dimensions 25m × 50m' },
                 { type: 'practice', problems: [
                     { question: 'To find a maximum or minimum, set f′(x) =', choices: ['1', '−1', '0', 'f(x)'], correctIndex: 2, explanation: 'Critical points occur where f′(x) = <strong>0</strong>.' },
                     { question: 'A farmer has 100m of fence for a rectangular pen. Maximize area. Constraint:', choices: ['A = lw', '2l + 2w = 100', 'l = w', 'A = 100'], correctIndex: 1, explanation: 'Perimeter constraint: <strong>2l + 2w = 100</strong>.' },
@@ -1355,6 +1467,13 @@ export const lessonPaths = {
             { id: 'definite-integrals', title: 'Definite Integrals & FTC', subtitle: 'The Fundamental Theorem of Calculus', xpReward: 55, sections: [
                 { type: 'text', content: `<h3>Definite Integrals</h3><p>∫ₐᵇ f(x)dx represents the <strong>signed area</strong> between f(x) and the x-axis from x=a to x=b.</p><h3>Fundamental Theorem of Calculus (Part 1)</h3><p><strong>∫ₐᵇ f(x)dx = F(b) − F(a)</strong>, where F is any antiderivative of f.</p><p>This connects derivatives and integrals — the two main ideas of calculus!</p>` },
                 { type: 'generated_practice', generators: ['calc-ftc', 'calc-ftc-concept'] },
+                { type: 'interactive_steps', title: 'Guided: Evaluate ∫₁⁴ (2x + 3) dx', description: 'Find the antiderivative, then apply the Fundamental Theorem.', steps: [
+                    { text: 'Antiderivative of 2x is {blank}', answer: 'x²', hint: '2x → x² (power rule reversed)' },
+                    { text: 'Antiderivative of 3 is {blank}', answer: '3x', hint: 'Constant k → kx' },
+                    { text: 'F(x) = x² + 3x. F(4) = 16 + 12 = {blank}', answer: '28', hint: 'Plug in x = 4' },
+                    { text: 'F(1) = 1 + 3 = {blank}', answer: '4', hint: 'Plug in x = 1' },
+                    { text: '∫₁⁴ (2x+3)dx = F(4) − F(1) = 28 − 4 = {blank}', answer: '24', hint: 'Subtract' }
+                ], result: '∫₁⁴ (2x + 3) dx = 24' },
                 { type: 'practice', problems: [
                     { question: '∫₁³ 2x dx =', choices: ['4', '8', '6', '10'], correctIndex: 1, explanation: 'F(x) = x². F(3)−F(1) = 9−1 = <strong>8</strong>.' },
                     { question: '∫₀^π sin(x) dx =', choices: ['0', '1', '2', '−1'], correctIndex: 2, explanation: 'F(x) = −cos x. (−cos π)−(−cos 0) = 1+1 = <strong>2</strong>.' },
@@ -1482,6 +1601,12 @@ export const lessonPaths = {
             { id: 'diff-equations', title: 'Differential Equations Intro', subtitle: 'Equations involving derivatives', xpReward: 50, sections: [
                 { type: 'text', content: `<h3>Differential Equations</h3><p>A <strong>differential equation</strong> (DE) is an equation containing derivatives. Example: dy/dx = 3x² has solution y = x³ + C.</p><h3>Separable DEs</h3><p>If you can write dy/dx = f(x)g(y), separate: dy/g(y) = f(x)dx. Then integrate both sides.</p>` },
                 { type: 'generated_practice', generators: ['separable-de'] },
+                { type: 'interactive_steps', title: 'Guided: Solve dy/dx = 2x, with y(0) = 5', description: 'Integrate and apply the initial condition.', steps: [
+                    { text: 'Integrate both sides: y = ∫2x dx = {blank} + C', answer: 'x²', hint: '∫2x dx = x²' },
+                    { text: 'Apply initial condition: y(0) = 5 → 0² + C = {blank}', answer: '5', hint: 'Plug in x = 0, y = 5' },
+                    { text: 'So C = {blank}', answer: '5', hint: '0 + C = 5' },
+                    { text: 'Particular solution: y = x² + {blank}', answer: '5', hint: 'Replace C with its value' }
+                ], result: 'y = x² + 5' },
                 { type: 'practice', problems: [
                     { question: 'dy/dx = 2x. General solution:', choices: ['y = 2x', 'y = x² + C', 'y = 2x²', 'y = x + C'], correctIndex: 1, explanation: 'Integrate: y = x² + C. <strong>y = x² + C</strong>.' },
                     { question: 'dy/dx = y is separable. Solution:', choices: ['y = eˣ + C', 'y = Ceˣ', 'y = x + C', 'y = ln x'], correctIndex: 1, explanation: 'dy/y = dx → ln|y| = x + C₁ → y = <strong>Ceˣ</strong>.' },
