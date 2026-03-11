@@ -50,8 +50,9 @@ export const lessonPaths = {
                 { type: 'tips', content: `<h4>💡 Pro Tips</h4><p>Undo addition/subtraction first, then multiplication/division. Always <strong>check</strong> by plugging your answer back in.</p><p><strong>No solution:</strong> If you get 0 = 5, the equation is impossible. <strong>Infinite solutions:</strong> If you get 0 = 0, every number works.</p>` },
                 { type: 'practice', problems: [
                     { question: 'Solve: <strong>5x + 3 = 28</strong>', choices: ['x = 4', 'x = 5', 'x = 6', 'x = 7'], correctIndex: 1, explanation: '5x = 25 → x = <strong>5</strong>' },
-                    { question: 'Solve: <strong>3x − 7 = 11</strong>', choices: ['x = 4', 'x = 5', 'x = 6', 'x = 7'], correctIndex: 2, explanation: '3x = 18 → x = <strong>6</strong>' },
+                    { type: 'fill_in', question: 'Solve for x: <strong>7x − 4 = 31</strong>. x = ?', answer: '5', explanation: '7x = 35 → x = <strong>5</strong>' },
                     { question: 'Solve: <strong>2x + 9 = 3</strong>', choices: ['x = −3', 'x = 3', 'x = 6', 'x = −6'], correctIndex: 0, explanation: '2x = −6 → x = <strong>−3</strong>' },
+                    { type: 'fill_in', question: 'Solve for x: <strong>4x + 12 = 36</strong>. x = ?', answer: '6', explanation: '4x = 24 → x = <strong>6</strong>' },
                     { question: 'Solve: <strong>4x − 1 = 4x + 5</strong>', choices: ['x = 0', 'x = 1', 'x = 6', 'No solution'], correctIndex: 3, explanation: 'Subtract 4x: −1 = 5 — always false → <strong>no solution</strong>.' },
                 ]}
             ]},
@@ -197,8 +198,9 @@ export const lessonPaths = {
                 { type: 'generated_practice', generators: ['zero-neg-exponent'] },
                 { type: 'practice', problems: [
                     { question: 'What is <strong>4⁰</strong>?', choices: ['0', '4', '1', 'Undefined'], correctIndex: 2, explanation: 'Any nonzero to 0 = <strong>1</strong>' },
-                    { question: 'Simplify: <strong>x³ × x⁵</strong>', choices: ['x⁸', 'x¹⁵', 'x²', 'x³⁵'], correctIndex: 0, explanation: 'Add exponents: <strong>x⁸</strong>' },
+                    { type: 'fill_in', question: 'Simplify: x⁴ × x³ = x^? (enter the exponent)', answer: '7', explanation: 'Add exponents: 4 + 3 = <strong>7</strong>, so x⁷' },
                     { question: 'Simplify: <strong>(x²)⁴</strong>', choices: ['x⁶', 'x⁸', 'x²', 'x¹⁶'], correctIndex: 1, explanation: 'Multiply exponents: <strong>x⁸</strong>' },
+                    { type: 'fill_in', question: '3⁴ = ?', answer: '81', explanation: '3 × 3 × 3 × 3 = <strong>81</strong>' },
                     { question: 'What is <strong>2⁻³</strong>?', choices: ['−8', '−6', '1/8', '1/6'], correctIndex: 2, explanation: '2⁻³ = 1/2³ = <strong>1/8</strong>' },
                 ]}
             ]},
@@ -488,7 +490,7 @@ export const lessonPaths = {
 
             // ---- 7. Pythagorean Theorem ----
             { id: 'pythagorean-theorem', title: 'Pythagorean Theorem', subtitle: 'a² + b² = c²', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>The Pythagorean Theorem</h3><p>In a <strong>right</strong> triangle, the square of the hypotenuse equals the sum of the squares of the two legs:</p><p style="text-align:center;font-size:1.2em;"><strong>a² + b² = c²</strong></p><p>The <strong>hypotenuse</strong> (c) is always the longest side, opposite the right angle.</p>` },
+                { type: 'text', content: `<h3>The Pythagorean Theorem</h3><p>In a <strong>right</strong> triangle, the square of the hypotenuse equals the sum of the squares of the two legs:</p><p style="text-align:center;font-size:1.2em;">$$a^2 + b^2 = c^2$$</p><p>The <strong>hypotenuse</strong> ($c$) is always the longest side, opposite the right angle.</p>` },
                 { type: 'example', title: 'Finding the Hypotenuse', content: `<p>Legs are 3 and 4. c² = 3² + 4² = 9 + 16 = 25 → c = <strong>5</strong>.</p>` },
                 { type: 'steps', title: 'Using the Pythagorean Theorem', steps: ['Identify the right angle and label sides a, b (legs) and c (hypotenuse).', 'Plug known values into a² + b² = c².', 'Solve for the unknown side.', 'Take the square root if needed.'] },
                 { type: 'generated_practice', generators: ['find-hypotenuse', 'find-leg'] },
@@ -502,8 +504,9 @@ export const lessonPaths = {
                 { type: 'tips', content: `<h4>💡 Key Takeaways</h4><p>Common Pythagorean triples: (3,4,5), (5,12,13), (8,15,17), (7,24,25). Multiples also work: (6,8,10) is 2×(3,4,5).</p>` },
                 { type: 'practice', problems: [
                     { question: 'Find the hypotenuse: legs 6 and 8.', choices: ['10', '14', '48', '100'], correctIndex: 0, explanation: '6² + 8² = 36 + 64 = 100 → √100 = <strong>10</strong>.' },
-                    { question: 'A right triangle has hypotenuse 13 and one leg 5. Find the other leg.', choices: ['8', '12', '18', '10'], correctIndex: 1, explanation: '13² − 5² = 169 − 25 = 144 → √144 = <strong>12</strong>.' },
+                    { type: 'fill_in', question: 'A right triangle has legs 5 and 12. Hypotenuse = ?', answer: '13', explanation: '5² + 12² = 25 + 144 = 169 → √169 = <strong>13</strong>' },
                     { question: 'Is a triangle with sides 7, 24, 25 a right triangle?', choices: ['Yes', 'No', 'Not enough info', 'Only if isosceles'], correctIndex: 0, explanation: '7² + 24² = 49 + 576 = 625 = 25². <strong>Yes</strong>.' },
+                    { type: 'fill_in', question: 'A right triangle has hypotenuse 10 and one leg 6. The other leg = ?', answer: '8', explanation: '10² − 6² = 100 − 36 = 64 → √64 = <strong>8</strong>' },
                     { question: 'The hypotenuse is always:', choices: ['The shortest side', 'Opposite the right angle', 'Adjacent to the right angle', 'Equal to a leg'], correctIndex: 1, explanation: 'The hypotenuse is <strong>opposite the right angle</strong> and is always the longest side.' },
                 ]}
             ]},
@@ -530,7 +533,7 @@ export const lessonPaths = {
 
             // ---- 9. Circles: Circumference & Area ----
             { id: 'circles-basics', title: 'Circles: Circumference & Area', subtitle: 'Working with π', xpReward: 40, sections: [
-                { type: 'text', content: `<h3>Circle Formulas</h3><p><strong>Circumference</strong> (distance around): C = 2πr = πd. <strong>Area</strong>: A = πr².</p><p>The <strong>radius</strong> (r) goes from center to edge. The <strong>diameter</strong> (d) goes all the way across: d = 2r.</p>` },
+                { type: 'text', content: `<h3>Circle Formulas</h3><p><strong>Circumference</strong> (distance around): $C = 2\\pi r = \\pi d$. <strong>Area</strong>: $A = \\pi r^2$.</p><p>The <strong>radius</strong> ($r$) goes from center to edge. The <strong>diameter</strong> ($d$) goes all the way across: $d = 2r$.</p>` },
                 { type: 'example', title: 'Finding Circumference & Area', content: `<p>Circle with r = 7: C = 2π(7) = 14π ≈ <strong>43.98</strong>. A = π(7²) = 49π ≈ <strong>153.94</strong>.</p>` },
                 { type: 'generated_practice', generators: ['circle-circumference', 'circle-area'] },
                 { type: 'interactive_steps', title: 'Guided: Circle with radius 6. Find area and circumference.', description: 'Apply the circle formulas.', steps: [
@@ -542,8 +545,9 @@ export const lessonPaths = {
                 { type: 'tips', content: `<h4>💡 Key Takeaways</h4><p>Always check: is the problem giving you radius or diameter? If diameter, divide by 2 first. Leave answers in terms of π when the problem says "exact."</p>` },
                 { type: 'practice', problems: [
                     { question: 'Circumference of a circle with diameter 10:', choices: ['10π', '25π', '100π', '5π'], correctIndex: 0, explanation: 'C = πd = <strong>10π</strong>.' },
-                    { question: 'Area of a circle with radius 3:', choices: ['6π', '9π', '3π', '12π'], correctIndex: 1, explanation: 'A = π(3²) = <strong>9π</strong>.' },
+                    { type: 'fill_in', question: 'Area of a circle with radius 5 (in terms of π): ?π', answer: '25', explanation: 'A = πr² = π(25) = <strong>25π</strong>' },
                     { question: 'A circle has circumference 20π. What is the radius?', choices: ['5', '10', '20', '40'], correctIndex: 1, explanation: '2πr = 20π → r = <strong>10</strong>.' },
+                    { type: 'fill_in', question: 'A circle has area 49π. What is the radius?', answer: '7', explanation: 'πr² = 49π → r² = 49 → r = <strong>7</strong>' },
                     { question: 'The diameter is always ___ the radius.', choices: ['Half', 'Equal to', 'Twice', 'π times'], correctIndex: 2, explanation: 'd = 2r. The diameter is <strong>twice</strong> the radius.' },
                 ]}
             ]},
@@ -895,8 +899,9 @@ export const lessonPaths = {
                 ], result: '240° = 4π/3 radians' },
                 { type: 'practice', problems: [
                     { question: 'Convert 60° to radians:', choices: ['π/6', 'π/4', 'π/3', 'π/2'], correctIndex: 2, explanation: '60 × π/180 = <strong>π/3</strong>.' },
+                    { type: 'fill_in', question: 'Convert 90° to radians: ?π/2 (enter the numerator)', answer: '1', explanation: '90 × π/180 = π/2. Numerator = <strong>1</strong>' },
                     { question: 'Convert π/4 to degrees:', choices: ['30°', '45°', '60°', '90°'], correctIndex: 1, explanation: '(π/4) × 180/π = <strong>45°</strong>.' },
-                    { question: 'Convert 180° to radians:', choices: ['π/2', 'π', '2π', '3π/2'], correctIndex: 1, explanation: '180 × π/180 = <strong>π</strong>.' },
+                    { type: 'fill_in', question: 'Convert 2π/3 radians to degrees: ?°', answer: '120', explanation: '(2π/3) × (180/π) = 2 × 60 = <strong>120°</strong>' },
                     { question: '2π radians equals:', choices: ['180°', '270°', '360°', '90°'], correctIndex: 2, explanation: '2π × 180/π = <strong>360°</strong>.' },
                 ]}
             ]},
@@ -925,9 +930,9 @@ export const lessonPaths = {
                     { text: 'In Q3, sin is negative. So sin(210°) = {blank}', answer: '-0.5', hint: 'Apply the negative sign' }
                 ], result: 'sin(210°) = −0.5. ASTC: sin is negative in Q3!' },
                 { type: 'practice', problems: [
-                    { question: 'Reference angle for 150°:', choices: ['30°', '50°', '60°', '150°'], correctIndex: 0, explanation: '180° − 150° = <strong>30°</strong>.' },
-                    { question: 'Reference angle for 225°:', choices: ['45°', '55°', '135°', '225°'], correctIndex: 0, explanation: '225° − 180° = <strong>45°</strong>.' },
-                    { question: 'Reference angle for 315°:', choices: ['15°', '45°', '60°', '135°'], correctIndex: 1, explanation: '360° − 315° = <strong>45°</strong>.' },
+                    { type: 'fill_in', question: 'Reference angle for 150°: ?°', answer: '30', explanation: '180° − 150° = <strong>30°</strong>' },
+                    { type: 'fill_in', question: 'Reference angle for 225°: ?°', answer: '45', explanation: '225° − 180° = <strong>45°</strong>' },
+                    { type: 'fill_in', question: 'Reference angle for 315°: ?°', answer: '45', explanation: '360° − 315° = <strong>45°</strong>' },
                     { question: 'In which quadrants is sin θ positive?', choices: ['Q1 and Q2', 'Q1 and Q4', 'Q2 and Q3', 'Q3 and Q4'], correctIndex: 0, explanation: 'Sin is positive in <strong>Q1 and Q2</strong> (top half of unit circle).' },
                 ]}
             ]},
@@ -946,7 +951,7 @@ export const lessonPaths = {
 
             // ---- 9. Pythagorean Identities ----
             { id: 'pythagorean-identities', title: 'Pythagorean Identities', subtitle: 'Fundamental trig relationships', xpReward: 45, sections: [
-                { type: 'text', content: `<h3>The Three Pythagorean Identities</h3><p>1. <strong>sin²θ + cos²θ = 1</strong></p><p>2. <strong>tan²θ + 1 = sec²θ</strong> (divide identity 1 by cos²θ)</p><p>3. <strong>1 + cot²θ = csc²θ</strong> (divide identity 1 by sin²θ)</p><p>These hold for ALL angles, not just right triangle angles.</p>` },
+                { type: 'text', content: `<h3>The Three Pythagorean Identities</h3><p>1. $\\sin^2\\theta + \\cos^2\\theta = 1$</p><p>2. $\\tan^2\\theta + 1 = \\sec^2\\theta$ (divide identity 1 by $\\cos^2\\theta$)</p><p>3. $1 + \\cot^2\\theta = \\csc^2\\theta$ (divide identity 1 by $\\sin^2\\theta$)</p><p>These hold for ALL angles, not just right triangle angles.</p>` },
                 { type: 'generated_practice', generators: ['pythagorean-identity', 'reciprocal-identity'] },
                 { type: 'practice', problems: [
                     { question: 'sin²θ + cos²θ =', choices: ['0', '1', '2', 'sin θ cos θ'], correctIndex: 1, explanation: 'The fundamental identity: <strong>1</strong>.' },
@@ -993,7 +998,7 @@ export const lessonPaths = {
 
             // ---- 13. Law of Sines ----
             { id: 'law-of-sines', title: 'Law of Sines', subtitle: 'Solving non-right triangles', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>Law of Sines</h3><p>For any triangle with sides a, b, c opposite angles A, B, C:</p><p style="text-align:center;"><strong>a/sin A = b/sin B = c/sin C</strong></p><p>Use when you know: (1) two angles and one side (AAS or ASA), or (2) two sides and an angle opposite one of them (SSA — the ambiguous case).</p>` },
+                { type: 'text', content: `<h3>Law of Sines</h3><p>For any triangle with sides $a, b, c$ opposite angles $A, B, C$:</p><p style="text-align:center;font-size:1.1em;">$\\frac{a}{\\sin A} = \\frac{b}{\\sin B} = \\frac{c}{\\sin C}$</p><p>Use when you know: (1) two angles and one side (AAS or ASA), or (2) two sides and an angle opposite one of them (SSA — the ambiguous case).</p>` },
                 { type: 'example', title: 'Finding a Side', content: `<p>A = 40°, B = 60°, a = 8. Find b. C = 180° − 40° − 60° = 80°. b/sin 60° = 8/sin 40°. b = 8 sin 60°/sin 40° ≈ <strong>10.78</strong>.</p>` },
                 { type: 'interactive_steps', title: 'Guided: A = 35°, B = 70°, a = 10. Find b.', description: 'Set up and solve using the Law of Sines.', steps: [
                     { text: 'First, find C: 180° − 35° − 70° = {blank}°', answer: '75', hint: 'Angles in a triangle sum to 180°' },
@@ -1013,7 +1018,7 @@ export const lessonPaths = {
 
             // ---- 14. Law of Cosines ----
             { id: 'law-of-cosines', title: 'Law of Cosines', subtitle: 'The generalized Pythagorean theorem', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>Law of Cosines</h3><p>For any triangle:</p><p style="text-align:center;"><strong>c² = a² + b² − 2ab cos C</strong></p><p>Use when you know: (1) two sides and the included angle (SAS), or (2) all three sides (SSS) to find an angle.</p><p>When C = 90°, cos 90° = 0 and this reduces to the Pythagorean theorem!</p>` },
+                { type: 'text', content: `<h3>Law of Cosines</h3><p>For any triangle:</p><p style="text-align:center;font-size:1.1em;">$c^2 = a^2 + b^2 - 2ab \\cos C$</p><p>Use when you know: (1) two sides and the included angle (SAS), or (2) all three sides (SSS) to find an angle.</p><p>When $C = 90°$, $\\cos 90° = 0$ and this reduces to the Pythagorean theorem!</p>` },
                 { type: 'generated_practice', generators: ['law-of-cosines-calc', 'law-choice'] },
                 { type: 'interactive_steps', title: 'Guided: a = 8, b = 5, C = 60°. Find c.', description: 'Apply c² = a² + b² − 2ab cos C.', steps: [
                     { text: 'a² = 8² = {blank}', answer: '64', hint: '8 × 8' },
@@ -1046,7 +1051,7 @@ export const lessonPaths = {
 
             // ---- 16. Area of a Triangle (Trig) ----
             { id: 'triangle-area-trig', title: 'Triangle Area with Trig', subtitle: 'Using sine to find area', xpReward: 40, sections: [
-                { type: 'text', content: `<h3>Trig Area Formula</h3><p>When you know two sides and the included angle: <strong>Area = ½ab sin C</strong>.</p><p>This is derived from the standard ½bh formula by noting that h = a sin C.</p><p>This works for <em>any</em> triangle — not just right triangles.</p>` },
+                { type: 'text', content: `<h3>Trig Area Formula</h3><p>When you know two sides and the included angle:</p><p style="text-align:center;font-size:1.1em;">$\\text{Area} = \\frac{1}{2}ab\\sin C$</p><p>This is derived from the standard $\\frac{1}{2}bh$ formula by noting that $h = a \\sin C$.</p><p>This works for <em>any</em> triangle — not just right triangles.</p>` },
                 { type: 'example', title: 'Finding Area', content: `<p><strong>Given: a = 8, b = 6, C = 30°.</strong></p><p>Area = ½(8)(6)sin 30° = 24 × 0.5 = <strong>12</strong></p>` },
                 { type: 'interactive_steps', title: 'Guided: Find area when a = 10, b = 7, C = 60°', description: 'Plug into the formula step by step.', steps: [
                     { text: 'Area = ½ · a · b · sin C = ½ · 10 · {blank} · sin 60°', answer: '7', hint: 'b = 7' },
@@ -1087,7 +1092,7 @@ export const lessonPaths = {
 
             // ---- 18. Double-Angle Identities ----
             { id: 'double-angle', title: 'Double-Angle Identities', subtitle: 'sin 2θ and cos 2θ', xpReward: 50, sections: [
-                { type: 'text', content: `<h3>Double-Angle Formulas</h3><p><strong>sin 2θ = 2 sin θ cos θ</strong></p><p><strong>cos 2θ = cos²θ − sin²θ = 2cos²θ − 1 = 1 − 2sin²θ</strong></p><p><strong>tan 2θ = 2tan θ / (1 − tan²θ)</strong></p><p>These are derived by applying the sum formulas with A = B = θ.</p>` },
+                { type: 'text', content: `<h3>Double-Angle Formulas</h3><p>$\\sin 2\\theta = 2 \\sin\\theta \\cos\\theta$</p><p>$\\cos 2\\theta = \\cos^2\\theta - \\sin^2\\theta = 2\\cos^2\\theta - 1 = 1 - 2\\sin^2\\theta$</p><p>$\\tan 2\\theta = \\frac{2\\tan\\theta}{1 - \\tan^2\\theta}$</p><p>These are derived by applying the sum formulas with $A = B = \\theta$.</p>` },
                 { type: 'example', title: 'Using Double-Angle Formulas', content: `<p><strong>Given sin θ = 3/5 and cos θ = 4/5, find sin 2θ and cos 2θ:</strong></p><p>sin 2θ = 2(3/5)(4/5) = 24/25</p><p>cos 2θ = (4/5)² − (3/5)² = 16/25 − 9/25 = <strong>7/25</strong></p>` },
                 { type: 'interactive_steps', title: 'Guided: Find cos 2θ if sin θ = 5/13', description: 'Use the identity cos 2θ = 1 − 2sin²θ.', steps: [
                     { text: 'First, find sin²θ: (5/13)² = {blank}', answer: '25/169', hint: 'Square the numerator and denominator separately' },
@@ -1284,7 +1289,7 @@ export const lessonPaths = {
 
             // ---- 5. Power Rule ----
             { id: 'power-rule', title: 'The Power Rule', subtitle: 'Differentiating xⁿ', xpReward: 45, sections: [
-                { type: 'text', content: `<h3>The Power Rule</h3><p>If f(x) = xⁿ, then <strong>f′(x) = nxⁿ⁻¹</strong>.</p><p>Combined with the constant multiple rule (d/dx[cf] = c·f′) and the sum rule (d/dx[f+g] = f′+g′), you can differentiate any polynomial.</p>` },
+                { type: 'text', content: `<h3>The Power Rule</h3><p>If $f(x) = x^n$, then:</p><p style="text-align:center;font-size:1.1em;"><strong>f′(x) = n·x<sup>n−1</sup></strong></p><p>Combined with the constant multiple rule and the sum rule, you can differentiate any polynomial.</p>` },
                 { type: 'example', title: 'Applying the Power Rule', content: `<p>f(x) = 3x⁴ − 2x² + 7x − 5. f′(x) = 12x³ − 4x + 7.</p>` },
                 { type: 'generated_practice', generators: ['calc-power-rule', 'calc-diff-rules'] },
                 { type: 'interactive_steps', title: 'Guided: Differentiate f(x) = 5x⁴ − 3x² + 7x − 2', description: 'Apply the power rule term by term.', steps: [
@@ -1296,8 +1301,9 @@ export const lessonPaths = {
                 ], result: 'f′(x) = 20x³ − 6x + 7' },
                 { type: 'practice', problems: [
                     { question: 'd/dx [x⁵] =', choices: ['5x⁴', '5x⁵', 'x⁴', '4x⁵'], correctIndex: 0, explanation: '5x⁵⁻¹ = <strong>5x⁴</strong>.' },
-                    { question: 'd/dx [4x³] =', choices: ['12x²', '4x²', '12x³', '3x²'], correctIndex: 0, explanation: '4·3x² = <strong>12x²</strong>.' },
+                    { type: 'fill_in', question: 'd/dx [6x³] = ?x²  (enter the coefficient)', answer: '18', explanation: '6·3 = 18, so d/dx[6x³] = <strong>18x²</strong>' },
                     { question: 'd/dx [x] =', choices: ['0', '1', 'x', '1/x'], correctIndex: 1, explanation: 'x = x¹, so 1·x⁰ = <strong>1</strong>.' },
+                    { type: 'fill_in', question: 'd/dx [x⁸] = ?x⁷  (enter the coefficient)', answer: '8', explanation: 'Power rule: 8x⁷. Coefficient = <strong>8</strong>' },
                     { question: 'd/dx [7] =', choices: ['7', '1', '0', '7x'], correctIndex: 2, explanation: 'Derivative of a constant = <strong>0</strong>.' },
                 ]}
             ]},
@@ -1344,7 +1350,7 @@ export const lessonPaths = {
 
             // ---- 8. Chain Rule ----
             { id: 'chain-rule', title: 'The Chain Rule', subtitle: 'Differentiating compositions', xpReward: 55, sections: [
-                { type: 'text', content: `<h3>Chain Rule</h3><p>If h(x) = f(g(x)), then <strong>h′(x) = f′(g(x)) · g′(x)</strong>.</p><p>"Derivative of the outer function (evaluated at the inner) times derivative of the inner."</p><p>This is probably the most-used derivative rule in calculus!</p>` },
+                { type: 'text', content: `<h3>Chain Rule</h3><p>If $h(x) = f(g(x))$, then: <strong>h′(x) = f′(g(x)) · g′(x)</strong>.</p><p>"Derivative of the outer function (evaluated at the inner) times derivative of the inner."</p><p>This is probably the most-used derivative rule in calculus!</p>` },
                 { type: 'example', title: 'Chain Rule Example', content: `<p>h(x) = (3x + 1)⁵. Outer: u⁵, inner: 3x+1. h′(x) = 5(3x+1)⁴ · 3 = <strong>15(3x+1)⁴</strong>.</p>` },
                 { type: 'interactive_steps', title: 'Guided: Differentiate f(x) = sin(x²)', description: 'Identify the outer and inner functions, then apply the chain rule.', steps: [
                     { text: 'The outer function is sin(u). Its derivative is {blank}', answer: 'cos(u)', hint: 'What is the derivative of sin?' },
@@ -1506,7 +1512,7 @@ export const lessonPaths = {
 
             // ---- 18. Integration by Parts ----
             { id: 'integration-by-parts', title: 'Integration by Parts', subtitle: 'Product rule in reverse', xpReward: 55, sections: [
-                { type: 'text', content: `<h3>Integration by Parts</h3><p>Formula: <strong>∫u dv = uv − ∫v du</strong>.</p><p>This technique handles integrals of products that u-sub can't touch.</p>` },
+                { type: 'text', content: `<h3>Integration by Parts</h3><p>Formula:</p><p style="text-align:center;font-size:1.1em;">$\\int u \\, dv = uv - \\int v \\, du$</p><p>This technique handles integrals of products that u-sub can't touch.</p>` },
                 { type: 'text', content: `<h3>Choosing u and dv: LIATE</h3><p>Use <strong>LIATE</strong> to choose u — pick from earlier in this list:</p><p><strong>L</strong>ogarithmic → <strong>I</strong>nverse trig → <strong>A</strong>lgebraic → <strong>T</strong>rig → <strong>E</strong>xponential</p><p>Whatever you pick for u, everything else is dv.</p>` },
                 { type: 'interactive_steps', title: 'Guided: Evaluate ∫x·eˣ dx', description: 'Apply integration by parts step by step.', steps: [
                     { text: 'Using LIATE, u = x (algebraic). So dv = {blank} dx', answer: 'eˣ', hint: 'Everything that\'s not u becomes dv' },
