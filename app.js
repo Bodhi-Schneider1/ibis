@@ -913,6 +913,7 @@ let cramState = {
     totalProblems: 0,
     totalCorrect: 0,
     weakAreas: [],
+    topicScores: {},
 };
 
 function cramReset() {
@@ -920,7 +921,7 @@ function cramReset() {
         topic: null, selectedLessons: [], diagnosticProblems: [],
         diagnosticAnswers: [], diagIndex: 0, diagAnswered: false,
         plan: [], currentBlock: 0, blockState: null, startTime: null,
-        totalProblems: 0, totalCorrect: 0, weakAreas: [],
+        totalProblems: 0, totalCorrect: 0, weakAreas: [], topicScores: {},
     };
     [1,2,3,4].forEach(n => document.getElementById(`cram-step-${n}`).classList.add('hidden'));
     document.getElementById('cram-step-1').classList.remove('hidden');
@@ -942,6 +943,7 @@ function cramSelectTopic(topic, btn) {
 
     document.getElementById('cram-step-1').classList.add('hidden');
     document.getElementById('cram-step-2').classList.remove('hidden');
+    cramUpdateDots(2);
     document.getElementById('cram-test-input').focus();
     cramUpdateDiagBtn();
 }
@@ -1044,7 +1046,18 @@ function cramUpdateDiagBtn() {
 function cramBack(toStep) {
     [1,2,3,4].forEach(n => document.getElementById(`cram-step-${n}`).classList.add('hidden'));
     document.getElementById(`cram-step-${toStep}`).classList.remove('hidden');
+    cramUpdateDots(toStep);
     if (toStep === 1) cramReset();
+}
+
+function cramUpdateDots(activeStep) {
+    for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`cram-dot-${i}`);
+        if (!dot) continue;
+        dot.className = 'cram-dot';
+        if (i < activeStep) dot.classList.add('done');
+        else if (i === activeStep) dot.classList.add('active');
+    }
 }
 
 // Close dropdown when clicking outside
@@ -1105,6 +1118,7 @@ function cramStartDiagnostic() {
 
     document.getElementById('cram-step-2').classList.add('hidden');
     document.getElementById('cram-step-3').classList.remove('hidden');
+    cramUpdateDots(3);
     cramShowDiagProblem(0);
 }
 
@@ -1259,6 +1273,7 @@ function cramBuildPlan() {
 
     document.getElementById('cram-step-3').classList.add('hidden');
     document.getElementById('cram-step-4').classList.remove('hidden');
+    cramUpdateDots(4);
 
     const realBlocks = plan.filter(b => b.type !== 'breather');
     document.getElementById('cram-plan-blocks').textContent = realBlocks.length;
@@ -1292,6 +1307,7 @@ function cramStartSession() {
     cramState.currentBlock = 0;
     cramState.totalProblems = 0;
     cramState.totalCorrect = 0;
+    cramState.topicScores = {};
     cramState.startTime = Date.now();
     _cramTimerSeconds = 0;
 
@@ -1351,15 +1367,25 @@ function cramShowBreather(area) {
     ];
     const msg = messages[Math.min(Math.floor(completed / 2), messages.length - 1)];
 
-    area.innerHTML = `<div class="cram-breather">
+    // Preview the next block
+    let previewHtml = '';
+    const nextBlock = cramState.plan.slice(cramState.currentBlock + 1).find(b => b.type !== 'breather');
+    if (nextBlock) {
+        const nextIcon = nextBlock.type === 'review' ? '📖' : nextBlock.type === 'mixed' ? '🔀' : '✏️';
+        const nextType = nextBlock.type === 'review' ? 'Review' : nextBlock.type === 'mixed' ? 'Mixed Practice' : 'Practice';
+        previewHtml = `<div class="cram-breather-preview"><strong>Up next:</strong> ${nextIcon} ${nextType} — ${escapeHtml(nextBlock.title)}</div>`;
+    }
+
+    area.innerHTML = `<div class="cram-block-card"><div class="cram-breather">
         <div class="cram-breather-emoji">🧘</div>
         <h2 class="cram-breather-title">${msg}</h2>
         <div class="cram-breather-stats">
             <span>✅ ${cramState.totalCorrect}/${cramState.totalProblems} correct${cramState.totalProblems > 0 ? ` (${acc}%)` : ''}</span>
             <span>📋 ${remaining} block${remaining !== 1 ? 's' : ''} remaining</span>
         </div>
+        ${previewHtml}
         <button class="cram-btn-primary cram-breather-go" onclick="cramAdvanceBlock()">Keep Going →</button>
-    </div>`;
+    </div></div>`;
     area.scrollTop = 0;
 }
 
@@ -1368,7 +1394,8 @@ function cramShowReviewBlock(block, area) {
     const lesson = lessonPaths[topic].lessons.find(l => l.id === block.lessonId);
     if (!lesson) { cramAdvanceBlock(); return; }
 
-    let html = `<div class="cram-review-block">
+    // CONDENSED review: only first text block, first example, and tips — not the whole lesson
+    let html = `<div class="cram-block-card"><div class="cram-review-block">
         <div class="cram-block-badge">📖 Review</div>
         <h2 class="cram-review-title">${escapeHtml(lesson.title)}</h2>
         <p class="cram-review-sub">${escapeHtml(lesson.subtitle)}</p>`;
@@ -1376,14 +1403,21 @@ function cramShowReviewBlock(block, area) {
     const visual = getLessonVisual(topic, block.lessonId);
     if (visual) html += `<div class="cram-review-visual">${visual}</div>`;
 
+    // Only show: first text, first example, tips — skip the rest
+    let textShown = false, exampleShown = false;
     lesson.sections.forEach(s => {
-        if (s.type === 'text') html += `<div class="cram-review-text">${s.content}</div>`;
-        else if (s.type === 'example') html += `<div class="cram-review-example"><h4>📝 ${s.title}</h4>${s.content}</div>`;
-        else if (s.type === 'tips') html += `<div class="cram-review-tips">${s.content}</div>`;
-        else if (s.type === 'steps') html += `<div class="cram-review-steps"><h4>📋 ${s.title}</h4><ol>${s.steps.map(st => `<li>${st}</li>`).join('')}</ol></div>`;
+        if (s.type === 'text' && !textShown) {
+            html += `<div class="cram-review-text">${s.content}</div>`;
+            textShown = true;
+        } else if (s.type === 'example' && !exampleShown) {
+            html += `<div class="cram-review-example"><h4>📝 ${s.title}</h4>${s.content}</div>`;
+            exampleShown = true;
+        } else if (s.type === 'tips') {
+            html += `<div class="cram-review-tips">${s.content}</div>`;
+        }
     });
 
-    html += `<button class="cram-btn-primary cram-block-next" onclick="cramAdvanceBlock()">Got it — Next Block →</button></div>`;
+    html += `<button class="cram-btn-primary cram-block-next" onclick="cramAdvanceBlock()">Got it — Next Block →</button></div></div>`;
     area.innerHTML = html;
     renderMath(area);
     area.scrollTop = 0;
@@ -1444,6 +1478,10 @@ function cramRenderPracticeProblem(blockTitle, area) {
     const total = bs.problems.length;
     bs.answered = false;
 
+    const block = cramState.plan[cramState.currentBlock];
+    const badgeClass = block.type === 'mixed' ? 'cram-badge-mixed' : 'cram-badge-practice';
+    const badgeIcon = block.type === 'mixed' ? '🔀 Mixed Review' : '✏️ Practice';
+
     const labels = ['A','B','C','D'];
     const allChoices = [
         { text: prob.choices[prob.correctIndex], correct: true },
@@ -1451,8 +1489,8 @@ function cramRenderPracticeProblem(blockTitle, area) {
     ];
     const shuffled = shuffle(allChoices);
 
-    area.innerHTML = `<div class="cram-practice-block">
-        <div class="cram-block-badge cram-badge-practice">✏️ Practice</div>
+    area.innerHTML = `<div class="cram-block-card"><div class="cram-practice-block">
+        <div class="cram-block-badge ${badgeClass}">${badgeIcon}</div>
         <div class="cram-practice-header">
             <span class="cram-practice-title">${escapeHtml(blockTitle)}</span>
             <span class="cram-practice-counter">${bs.index + 1} / ${total}</span>
@@ -1466,7 +1504,7 @@ function cramRenderPracticeProblem(blockTitle, area) {
         ).join('')}</div>
         <div class="cram-practice-feedback hidden" id="cram-practice-fb"></div>
         <button class="cram-btn-primary hidden" id="cram-practice-next" onclick="cramPracticeNext()">Next →</button>
-    </div>`;
+    </div></div>`;
     renderMath(area);
     area.scrollTop = 0;
 }
@@ -1479,6 +1517,15 @@ function cramPracticeAnswer(btn) {
     const isCorrect = btn.dataset.correct === 'true';
     if (isCorrect) { bs.correct++; cramState.totalCorrect++; }
     cramState.totalProblems++;
+
+    // Track per-topic score
+    const block = cramState.plan[cramState.currentBlock];
+    if (block.lessonId) {
+        if (!cramState.topicScores) cramState.topicScores = {};
+        if (!cramState.topicScores[block.lessonId]) cramState.topicScores[block.lessonId] = { correct: 0, total: 0, title: block.title };
+        cramState.topicScores[block.lessonId].total++;
+        if (isCorrect) cramState.topicScores[block.lessonId].correct++;
+    }
 
     document.querySelectorAll('.cram-choice').forEach(b => {
         b.classList.add('cram-choice-disabled');
@@ -1496,18 +1543,41 @@ function cramPracticeAnswer(btn) {
 
     const nextBtn = document.getElementById('cram-practice-next');
     nextBtn.classList.remove('hidden');
-    nextBtn.textContent = bs.index >= bs.problems.length - 1 ? 'Next Block →' : 'Next →';
+    nextBtn.textContent = bs.index >= bs.problems.length - 1 ? 'See Results →' : 'Next →';
 }
 
 function cramPracticeNext() {
     const bs = cramState.blockState;
     bs.index++;
     if (bs.index >= bs.problems.length) {
-        cramAdvanceBlock();
+        // Show per-block results before advancing
+        cramShowBlockResults();
     } else {
         const block = cramState.plan[cramState.currentBlock];
         cramRenderPracticeProblem(block.title, document.getElementById('cram-block-area'));
     }
+}
+
+// Mini results screen after each practice block
+function cramShowBlockResults() {
+    const bs = cramState.blockState;
+    const block = cramState.plan[cramState.currentBlock];
+    const acc = bs.problems.length > 0 ? Math.round((bs.correct / bs.problems.length) * 100) : 0;
+    const area = document.getElementById('cram-block-area');
+
+    let scoreClass = 'score-great';
+    let msg = 'Nailed it!';
+    if (acc < 50) { scoreClass = 'score-low'; msg = "That's okay — you'll get more practice."; }
+    else if (acc < 80) { scoreClass = 'score-ok'; msg = 'Good effort. Keep going!'; }
+
+    area.innerHTML = `<div class="cram-block-card"><div class="cram-block-result">
+        <div class="cram-block-result-score ${scoreClass}">${acc}%</div>
+        <div class="cram-block-result-label">${bs.correct} of ${bs.problems.length} correct</div>
+        <div class="cram-block-result-topic">${escapeHtml(block.title)}</div>
+        <p class="cram-block-result-msg">${msg}</p>
+        <button class="cram-btn-primary" onclick="cramAdvanceBlock()">Continue →</button>
+    </div></div>`;
+    area.scrollTop = 0;
 }
 
 function cramAdvanceBlock() {
@@ -1530,7 +1600,27 @@ function cramFinish() {
     else { icon = '📚'; title = 'Keep studying!'; subtitle = 'Focus on the areas you struggled with. You can cram again anytime.'; }
 
     const area = document.getElementById('cram-block-area');
-    area.innerHTML = `<div class="cram-summary">
+
+    // Per-topic breakdown
+    let breakdownHtml = '';
+    const ts = cramState.topicScores || {};
+    const topicKeys = Object.keys(ts);
+    if (topicKeys.length > 0) {
+        breakdownHtml = `<div class="cram-summary-breakdown"><div class="cram-summary-breakdown-title">Per-Topic Breakdown</div>`;
+        topicKeys.forEach(lid => {
+            const s = ts[lid];
+            const topicAcc = s.total > 0 ? Math.round((s.correct / s.total) * 100) : 0;
+            const cls = topicAcc >= 80 ? 'sb-great' : topicAcc >= 50 ? 'sb-ok' : 'sb-low';
+            const icon = topicAcc >= 80 ? '✅' : topicAcc >= 50 ? '⚠️' : '❌';
+            breakdownHtml += `<div class="cram-sb-item">
+                <span class="cram-sb-topic">${icon} ${escapeHtml(s.title)}</span>
+                <span class="cram-sb-score ${cls}">${s.correct}/${s.total} (${topicAcc}%)</span>
+            </div>`;
+        });
+        breakdownHtml += `</div>`;
+    }
+
+    area.innerHTML = `<div class="cram-block-card"><div class="cram-summary">
         <div class="cram-summary-icon">${icon}</div>
         <h2 class="cram-summary-title">${title}</h2>
         <p class="cram-summary-sub">${subtitle}</p>
@@ -1540,6 +1630,7 @@ function cramFinish() {
             <div class="cram-summary-stat"><span class="cram-ss-val">${cramState.totalCorrect}/${cramState.totalProblems}</span><span class="cram-ss-lbl">Correct</span></div>
             <div class="cram-summary-stat"><span class="cram-ss-val">${accuracy}%</span><span class="cram-ss-lbl">Accuracy</span></div>
         </div>
+        ${breakdownHtml}
         ${cramState.weakAreas.length > 0 ? `<div class="cram-summary-weak"><strong>Weak areas to revisit:</strong> ${cramState.weakAreas.map(id => {
             const l = lessonPaths[cramState.topic].lessons.find(x => x.id === id);
             return l ? escapeHtml(l.title) : id;
@@ -1548,7 +1639,7 @@ function cramFinish() {
             <button class="cram-btn-primary" onclick="cramAgain()">🧠 Cram Again</button>
             <button class="cram-btn-secondary" onclick="cramBackToDashboard()">Back to Dashboard</button>
         </div>
-    </div>`;
+    </div></div>`;
 
     const user = auth.currentUser;
     if (user && cramState.totalCorrect > 0) {
@@ -1746,6 +1837,7 @@ window.closeLessonToPath = closeLessonToPath;
 window.completeLesson = completeLesson;
 window.handleLessonPractice = handleLessonPractice;
 window.handleInteractiveStep = handleInteractiveStep;
+window.handleLessonFillIn = handleLessonFillIn;
 window.selectChoice = selectChoice;
 window.nextProblem = nextProblem;
 window.quitSession = quitSession;
@@ -2134,10 +2226,22 @@ async function showPath(topic) {
     path.lessons.forEach((lesson, index) => {
         const lessonKey = `${topic}-${lesson.id}`;
         const isCompleted = completedLessons.includes(lessonKey);
-        const isUnlocked = index === 0 || completedLessons.includes(`${topic}-${path.lessons[index - 1].id}`);
         const score = lessonScores[lessonKey] || null;
         const accuracy = score ? score.accuracy : null;
         const needsRedo = isCompleted && accuracy !== null && accuracy < 75;
+
+        // Unlock logic: first lesson always unlocked, others require previous lesson completed with ≥75%
+        let isUnlocked = false;
+        if (index === 0) {
+            isUnlocked = true;
+        } else {
+            const prevKey = `${topic}-${path.lessons[index - 1].id}`;
+            const prevCompleted = completedLessons.includes(prevKey);
+            const prevScore = lessonScores[prevKey] || null;
+            const prevAccuracy = prevScore ? prevScore.accuracy : null;
+            // Unlocked if previous is completed AND has ≥75% (or was completed before scoring was added)
+            isUnlocked = prevCompleted && (prevAccuracy === null || prevAccuracy >= 75);
+        }
         
         const nodeEl = document.createElement('div');
         nodeEl.className = 'lesson-node';
@@ -2166,6 +2270,17 @@ async function showPath(topic) {
             redoBadge = `<span class="redo-badge">Redo for +${remainingXP} XP</span>`;
         }
 
+        // Determine lock reason for display
+        let lockReason = '';
+        if (!isUnlocked && !isCompleted && index > 0) {
+            const prevKey = `${topic}-${path.lessons[index - 1].id}`;
+            const prevCompleted = completedLessons.includes(prevKey);
+            const prevScore = lessonScores[prevKey] || null;
+            if (prevCompleted && prevScore && prevScore.accuracy < 75) {
+                lockReason = `Score 75%+ on "${path.lessons[index - 1].title}" to unlock`;
+            }
+        }
+
         const circleContent = isCompleted
             ? (needsRedo ? '↻' : '✓')
             : (isUnlocked ? (index + 1) : '🔒');
@@ -2181,6 +2296,7 @@ async function showPath(topic) {
                     <span class="xp-badge">+${lesson.xpReward} XP</span>
                     ${accuracyBadge}
                     ${redoBadge}
+                    ${lockReason ? `<span class="lock-reason">${lockReason}</span>` : ''}
                 </div>
             </div>
         `;
@@ -2324,23 +2440,7 @@ async function openLessonFromPath(topic, lessonId) {
             contentHtml += `</div>`;
             section.problems.forEach((prob, i) => {
                 const gIdx = practiceGlobalIndex;
-                const labels = ['A', 'B', 'C', 'D'];
-                contentHtml += `
-                    <div class="lesson-practice-item" id="lp-item-${gIdx}">
-                        <div class="lp-question-row">
-                            <span class="lp-number" id="lp-number-${gIdx}">${gIdx + 1}</span>
-                            <span class="lp-question">${prob.question}</span>
-                        </div>
-                        <div class="lp-choices" id="lp-choices-${gIdx}">
-                            ${prob.choices.map((ch, ci) => `
-                                <button class="lp-choice" data-gidx="${gIdx}" data-cidx="${ci}" onclick="handleLessonPractice(${gIdx}, ${ci})">
-                                    <span class="lp-label">${labels[ci]}</span>${ch}
-                                </button>
-                            `).join('')}
-                        </div>
-                        <div class="lp-feedback hidden" id="lp-feedback-${gIdx}"></div>
-                    </div>
-                `;
+                contentHtml += renderLessonProblem(prob, gIdx);
                 practiceGlobalIndex++;
             });
             contentHtml += `</div>`;
@@ -2370,22 +2470,7 @@ async function openLessonFromPath(topic, lessonId) {
                 if (!prob) prob = genFunc(); // last resort: allow duplicate
                 // Store for answer checking
                 lessonPracticeState.generatedProblems[gIdx] = prob;
-                contentHtml += `
-                    <div class="lesson-practice-item" id="lp-item-${gIdx}">
-                        <div class="lp-question-row">
-                            <span class="lp-number" id="lp-number-${gIdx}">${gIdx + 1}</span>
-                            <span class="lp-question">${prob.question}</span>
-                        </div>
-                        <div class="lp-choices" id="lp-choices-${gIdx}">
-                            ${prob.choices.map((ch, ci) => `
-                                <button class="lp-choice" data-gidx="${gIdx}" data-cidx="${ci}" onclick="handleLessonPractice(${gIdx}, ${ci})">
-                                    <span class="lp-label">${labels[ci]}</span>${ch}
-                                </button>
-                            `).join('')}
-                        </div>
-                        <div class="lp-feedback hidden" id="lp-feedback-${gIdx}"></div>
-                    </div>
-                `;
+                contentHtml += renderLessonProblem(prob, gIdx);
                 practiceGlobalIndex++;
             });
             contentHtml += `</div>`;
@@ -2523,6 +2608,140 @@ function handleInteractiveStep(blockIdx, stepIdx) {
         // Remove wrong class after a moment so they can retry
         setTimeout(() => inputEl.classList.remove('istep-wrong'), 800);
         inputEl.select();
+    }
+}
+
+// Handle fill-in-the-blank lesson practice answer
+function handleLessonFillIn(gIdx) {
+    if (lessonPracticeState.answeredIndices.has(gIdx)) return;
+    
+    const inputEl = document.getElementById(`lp-fillin-${gIdx}`);
+    if (!inputEl) return;
+    const userAnswer = inputEl.value.trim();
+    if (!userAnswer) { inputEl.focus(); return; }
+
+    // Get the correct answer
+    let correctAnswer = inputEl.dataset.answer;
+    
+    // Flexible matching: case-insensitive, strip spaces, handle minus signs
+    const normalize = (s) => s.toLowerCase().replace(/\s+/g, '').replace(/−/g, '-').replace(/×/g, '*');
+    const isCorrect = normalize(userAnswer) === normalize(correctAnswer);
+
+    lessonPracticeState.answeredIndices.add(gIdx);
+    inputEl.disabled = true;
+
+    // Get problem for explanation
+    let targetProblem = lessonPracticeState.generatedProblems[gIdx] || null;
+    if (!targetProblem) {
+        const topic = currentTopic;
+        const lessonId = currentLessonId.substring(topic.length + 1);
+        const lesson = lessonPaths[topic].lessons.find(l => l.id === lessonId);
+        if (lesson) {
+            let idx = 0;
+            for (const section of lesson.sections) {
+                if (section.type === 'practice') {
+                    for (const prob of section.problems) {
+                        if (idx === gIdx) { targetProblem = prob; break; }
+                        idx++;
+                    }
+                    if (targetProblem) break;
+                } else if (section.type === 'generated_practice') {
+                    for (const genId of section.generators) { idx++; }
+                }
+            }
+        }
+    }
+
+    const feedbackEl = document.getElementById(`lp-feedback-${gIdx}`);
+    feedbackEl.classList.remove('hidden');
+
+    if (isCorrect) {
+        inputEl.classList.add('lp-fillin-correct');
+        feedbackEl.className = 'lp-feedback lp-feedback-correct';
+        feedbackEl.innerHTML = `<span class="lp-fb-icon">✅</span> <strong>Correct!</strong> ${targetProblem ? targetProblem.explanation : ''}`;
+        lessonPracticeState.completed++;
+        lessonPracticeState.correctCount++;
+    } else {
+        inputEl.classList.add('lp-fillin-incorrect');
+        feedbackEl.className = 'lp-feedback lp-feedback-incorrect';
+        feedbackEl.innerHTML = `<span class="lp-fb-icon">❌</span> <strong>Answer: ${correctAnswer}</strong>. ${targetProblem ? targetProblem.explanation : ''}`;
+        lessonPracticeState.completed++;
+    }
+
+    const numEl = document.getElementById(`lp-number-${gIdx}`);
+    numEl.textContent = isCorrect ? '✓' : '✗';
+    numEl.classList.add(isCorrect ? 'lp-number-correct' : 'lp-number-incorrect');
+
+    // Update progress bar (same logic as handleLessonPractice)
+    const { totalProblems, completed } = lessonPracticeState;
+    const completedEl = document.getElementById('lpb-completed');
+    const fillEl = document.getElementById('lpb-fill');
+    if (completedEl) completedEl.textContent = completed;
+    if (fillEl) fillEl.style.width = (completed / totalProblems * 100) + '%';
+
+    if (completed >= totalProblems) {
+        const completeLessonBtn = document.getElementById('complete-lesson-btn');
+        const isFullyCompleted = completeLessonBtn.textContent.startsWith('✓ Lesson Completed');
+        if (!isFullyCompleted) {
+            completeLessonBtn.disabled = false;
+            const acc = Math.round((lessonPracticeState.correctCount / totalProblems) * 100);
+            completeLessonBtn.textContent = `Complete Lesson (${acc}% accuracy) ✓`;
+        }
+        const barText = document.querySelector('.lpb-text');
+        if (barText) barText.textContent = 'All practice completed! You can finish the lesson.';
+    } else {
+        const completeLessonBtn = document.getElementById('complete-lesson-btn');
+        const isFullyCompleted = completeLessonBtn.textContent.startsWith('✓ Lesson Completed');
+        if (!isFullyCompleted) {
+            completeLessonBtn.disabled = true;
+            completeLessonBtn.textContent = `Complete practice first (${completed}/${totalProblems})`;
+        }
+    }
+
+    renderMath(feedbackEl);
+}
+
+// Render a single practice problem — handles both multiple-choice and fill-in-the-blank
+function renderLessonProblem(prob, gIdx) {
+    const isFillin = prob.type === 'fill_in';
+    const labels = ['A', 'B', 'C', 'D'];
+    
+    if (isFillin) {
+        const answer = prob.answer || '';
+        return `
+            <div class="lesson-practice-item" id="lp-item-${gIdx}">
+                <div class="lp-question-row">
+                    <span class="lp-number" id="lp-number-${gIdx}">${gIdx + 1}</span>
+                    <span class="lp-question">${prob.question}</span>
+                </div>
+                <div class="lp-fillin-wrap" id="lp-choices-${gIdx}">
+                    <input type="text" class="lp-fillin-input" id="lp-fillin-${gIdx}"
+                        data-answer="${escapeHtml(String(answer))}"
+                        placeholder="Type your answer..."
+                        autocomplete="off"
+                        onkeydown="if(event.key==='Enter')handleLessonFillIn(${gIdx})"/>
+                    <button class="lp-fillin-btn" onclick="handleLessonFillIn(${gIdx})">Check</button>
+                </div>
+                <div class="lp-feedback hidden" id="lp-feedback-${gIdx}"></div>
+            </div>
+        `;
+    } else {
+        return `
+            <div class="lesson-practice-item" id="lp-item-${gIdx}">
+                <div class="lp-question-row">
+                    <span class="lp-number" id="lp-number-${gIdx}">${gIdx + 1}</span>
+                    <span class="lp-question">${prob.question}</span>
+                </div>
+                <div class="lp-choices" id="lp-choices-${gIdx}">
+                    ${prob.choices.map((ch, ci) => `
+                        <button class="lp-choice" data-gidx="${gIdx}" data-cidx="${ci}" onclick="handleLessonPractice(${gIdx}, ${ci})">
+                            <span class="lp-label">${labels[ci]}</span>${ch}
+                        </button>
+                    `).join('')}
+                </div>
+                <div class="lp-feedback hidden" id="lp-feedback-${gIdx}"></div>
+            </div>
+        `;
     }
 }
 
